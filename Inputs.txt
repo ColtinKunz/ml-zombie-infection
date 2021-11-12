@@ -1,0 +1,38 @@
+Inputs
+	Character
+		Line of Sight
+			Zombies seen
+			Citizens seen
+			Soldiers seen
+
+Character Outputs
+	X
+		-1 - 1
+	Y
+		-1 - 1
+
+Soldier Outputs
+	Shoot?
+		Y/N
+
+Act. Function
+	Movement
+		TanH
+	Shoot
+		TanH
+
+
+Population size
+	50
+
+Fitness function
+	Zombie
+		Fastest to kill all humans or most humans killed
+	Citizen
+		Survive the longest
+	Soldier
+		Fastest to kill all zombies or most zombies killed
+
+
+Max Generations
+	30
