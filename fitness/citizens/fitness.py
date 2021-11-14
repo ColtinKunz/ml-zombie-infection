@@ -1,24 +1,70 @@
 import os
 import neat
-import pickle
+
+from random import randint
+from neat.six_util import iteritems
+from neat.reporting import ReporterSet
 
 
-def setup(genomes, config):
+def setup(num_citizens, genomes=None):
+
     nets = []
     ge = []
-    citizen_lists = []
 
-    for g in genomes:
-        net = neat.nn.FeedForwardNetwork(g, config)
+    local_dir = os.path.dirname(__file__)
+    config_path = os.path.join(local_dir, "config-feedforward.txt")
+    config = neat.config.Config(
+        neat.DefaultGenome,
+        neat.DefaultReproduction,
+        neat.DefaultSpeciesSet,
+        neat.DefaultStagnation,
+        config_path,
+    )
+    if genomes is None:
+        reporters = ReporterSet()
+        stagnation = config.stagnation_type(config.stagnation_config, reporters)
+        reproduction = config.reproduction_type(
+            config.reproduction_config, reporters, stagnation
+        )
+        population = reproduction.create_new(
+            config.genome_type, config.genome_config, config.pop_size
+        )
+        genomes = list(iteritems(population))
+    for _, g in genomes:
+        net = neat.nn.FeedForwardNetwork.create(g, config)
         nets.append(net)
-        citizens = []
-        for i in range(50):
-            with open(
-                os.path.join("pickles", "best_citizens.pickle"), "rb"
-            ) as c_handle:
-                citizens = pickle.load(c_handle)
-        citizen_lists.append(citizens)
         g.fitness = 0
         ge.append(g)
 
-    return citizen_lists, ge
+    return generate(num_citizens), ge, nets
+
+
+def generate(num_citizens):
+    from characters import Citizen
+
+    citizens = []
+    for i in range(num_citizens):
+        citizens.append(Citizen((randint(9, 490), randint(9, 490))))
+    return citizens
+
+
+def run(func):
+    local_dir = os.path.dirname(__file__)
+    config_path = os.path.join(local_dir, "config-feedforward.txt")
+    config = neat.config.Config(
+        neat.DefaultGenome,
+        neat.DefaultReproduction,
+        neat.DefaultSpeciesSet,
+        neat.DefaultStagnation,
+        config_path,
+    )
+    # Create the population, which is the top-level object for a NEAT run.
+    p = neat.Population(config)
+
+    # Add a stdout reporter to show progress in the terminal.
+    p.add_reporter(neat.StdOutReporter(True))
+    stats = neat.StatisticsReporter()
+    p.add_reporter(stats)
+
+    winner = p.run(func, 1)
+    print("\nBest genome:\n{!s}".format(winner))

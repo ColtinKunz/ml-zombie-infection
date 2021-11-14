@@ -1,40 +1,64 @@
 import os
 import neat
+
 from random import randint
+from neat.six_util import iteritems
+from neat.reporting import ReporterSet
 
 
-def fitness(genomes, config):
-    from characters import Zombie
-
+def setup(num_zombies, genomes=None):
     nets = []
     ge = []
-    zombie_lists = []
 
-    for g in genomes:
-        net = neat.nn.FeedForwardNetwork(g, config)
-        nets.append(net)
-        zombies = []
-        for i in range(50):
-            zombies.append(Zombie((randint(9, 490), randint(9, 490))))
-        zombie_lists.append(zombies)
-        g.fitness = 0
-        ge.append(g)
-
-
-def run(config_file):
-    """
-    runs the NEAT algorithm to train a neural network to play flappy bird.
-    :param config_file: location of config file
-    :return: None
-    """
+    local_dir = os.path.dirname(__file__)
+    config_path = os.path.join(local_dir, "config-feedforward.txt")
     config = neat.config.Config(
         neat.DefaultGenome,
         neat.DefaultReproduction,
         neat.DefaultSpeciesSet,
         neat.DefaultStagnation,
-        config_file,
+        config_path,
     )
 
+    if genomes is None:
+        reporters = ReporterSet()
+        stagnation = config.stagnation_type(config.stagnation_config, reporters)
+        reproduction = config.reproduction_type(
+            config.reproduction_config, reporters, stagnation
+        )
+        population = reproduction.create_new(
+            config.genome_type, config.genome_config, config.pop_size
+        )
+        genomes = list(iteritems(population))
+
+    for _, g in genomes:
+        net = neat.nn.FeedForwardNetwork.create(g, config)
+        nets.append(net)
+        g.fitness = 0
+        ge.append(g)
+
+    return generate(num_zombies), ge, nets
+
+
+def generate(num_zombies):
+    from characters import Zombie
+
+    zombies = []
+    for i in range(num_zombies):
+        zombies.append(Zombie((randint(9, 490), randint(9, 490))))
+    return zombies
+
+
+def run(func):
+    local_dir = os.path.dirname(__file__)
+    config_path = os.path.join(local_dir, "config-feedforward.txt")
+    config = neat.config.Config(
+        neat.DefaultGenome,
+        neat.DefaultReproduction,
+        neat.DefaultSpeciesSet,
+        neat.DefaultStagnation,
+        config_path,
+    )
     # Create the population, which is the top-level object for a NEAT run.
     p = neat.Population(config)
 
@@ -42,19 +66,6 @@ def run(config_file):
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    # p.add_reporter(neat.Checkpointer(5))
 
-    # Run for up to 50 generations.
-    winner = p.run(fitness, 50)
-
-    # show final stats
+    winner = p.run(func, 1)
     print("\nBest genome:\n{!s}".format(winner))
-
-
-def fit():
-    # Determine path to configuration file. This path manipulation is
-    # here so that the script will run successfully regardless of the
-    # current working directory.
-    local_dir = os.path.dirname(__file__)
-    config_path = os.path.join(local_dir, "config-feedforward.txt")
-    run(config_path)

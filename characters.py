@@ -119,13 +119,15 @@ class Soldier(Character):
                     ]
                 ),
             ),
+            self,
         )
 
 
 class Bullet:
-    def __init__(self, position, direction):
-        self.position = (position.x, position.y)
+    def __init__(self, position, direction, soldier):
+        self.position = (position[0], position[1])
         self.direction = pygame.Vector2(direction)
+        self.soldier = soldier
         self.speed = 15
         self.radius = 4
 
