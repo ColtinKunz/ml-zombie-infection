@@ -36,7 +36,6 @@ class Character:
         """
         self.max_vel = 5
         self.speed = 3
-        self.tick_count = 0
         self.img = None
 
         self.position = position
@@ -54,7 +53,29 @@ class Character:
             self.mask,
             self.position + direction * self.speed,
         )
-        if direction != pygame.Vector2(0, 0) and not overlap:
+        if overlap:
+            x_direction = pygame.Vector2((self.vel[0], 0))
+            x_overlap = game_map.mask.overlap(
+                self.mask,
+                self.position
+                + pygame.Vector2((0, 0))
+                + x_direction * self.speed,
+            )
+            y_direction = pygame.Vector2((0, self.vel[1]))
+            y_overlap = game_map.mask.overlap(
+                self.mask,
+                self.position
+                + pygame.Vector2((0, 0))
+                + y_direction * self.speed,
+            )
+            if not x_overlap:
+                direction = pygame.Vector2((0, 0)) + x_direction
+            elif not y_overlap:
+                direction = pygame.Vector2((0, 0)) + y_direction
+            else:
+                return
+
+        if direction != pygame.Vector2(0, 0):
             direction.normalize_ip()
             self.position += direction * self.speed
 
@@ -102,7 +123,11 @@ class Soldier(Character):
         self.mask = self.get_mask()
         self.distance_measure = 10
 
+        self.reload_count = 0
+        self.secs_to_reload = 0.1
+
     def shoot(self):
+        self.reload_count = 0
         return Bullet(
             self.position,
             (

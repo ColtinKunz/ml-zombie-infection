@@ -2,16 +2,23 @@ import os
 import pickle
 import pygame
 
+from utils import closest, get_best_index
+
 pygame.font.init()
 win_width = 512
 win_height = 512
-stat_font = pygame.font.SysFont("comicsans", 50)
-end_font = pygame.font.SysFont("comicsans", 70)
+stat_font = pygame.font.SysFont("comicsans", 12)
+best_font = pygame.font.SysFont("comicsans", 50)
 draw_lines = False
-fps = 30
-generations_each = 10
+
+fps = 60
+seconds_per_run = 10
+
+generations_each = 10000
 loops = generations_each * 3
+loop_num = 0
 counter = 0
+characters_testing = "zombies"
 
 win = pygame.display.set_mode((win_width, win_height))
 pygame.display.set_caption("Infection")
@@ -23,16 +30,31 @@ bg_img = pygame.transform.scale2x(
 # IF THESE NUMBERS CHANGE, THEY MUST ALSO CHANGE IN THE RESPECTIVE CONFIG FILE
 # pop_size = <num_characters>
 num_zombies = 50
-num_citizens = 1
+num_citizens = 40
 num_soldiers = 10
 
 
-def draw_window(win, game_map, zombies, citizens, soldiers, bullets):
+def draw_window(
+    win,
+    game_map,
+    zombies,
+    citizens,
+    soldiers,
+    bullets,
+    tick_count,
+    max_fitness,
+    min_fitness,
+    best_character_pos,
+):
     """
     draws the windows for the main game loop
     :param win: pygame window surface
     :return: None
     """
+    best_character_label_pos = (
+        best_character_pos[0] - 10,
+        best_character_pos[1] - 40,
+    )
     win.blit(bg_img, (0, 0))
     game_map.draw(win)
 
@@ -46,6 +68,56 @@ def draw_window(win, game_map, zombies, citizens, soldiers, bullets):
         citizen.draw(win)
     for bullet in bullets:
         bullet.draw(win)
+
+    # score
+    score_label = stat_font.render(
+        "Tick Count: " + str(tick_count), 1, (255, 255, 255)
+    )
+    win.blit(score_label, (win_width - score_label.get_width() - 15, 10))
+    score_label = stat_font.render(
+        "Seconds Passed: " + str(round(tick_count / fps)), 1, (255, 255, 255)
+    )
+    win.blit(score_label, (win_width - score_label.get_width() - 15, 50))
+
+    # generations
+    score_label = stat_font.render(
+        "Highest Fitness: " + str(round(max_fitness)), 1, (255, 255, 255)
+    )
+    win.blit(score_label, (10, 10))
+
+    score_label = stat_font.render(
+        "Lowest Fitness: " + str(round(min_fitness)), 1, (255, 255, 255)
+    )
+    win.blit(score_label, (10, 25))
+
+    score_label = stat_font.render(
+        "Zombies Alive: " + str(len(zombies)), 1, (255, 255, 255)
+    )
+    win.blit(score_label, (10, 100))
+
+    score_label = stat_font.render(
+        "Citizens Alive: " + str(len(citizens)), 1, (255, 255, 255)
+    )
+    win.blit(score_label, (10, 140))
+
+    score_label = stat_font.render(
+        "Soldiers Alive: " + str(len(soldiers)), 1, (255, 255, 255)
+    )
+    win.blit(score_label, (10, 60))
+
+    score_label = stat_font.render(
+        "Characters Testing: " + characters_testing, 1, (255, 255, 255)
+    )
+    win.blit(score_label, (10, 200))
+
+    score_label = stat_font.render(
+        "Loop Number: " + str(loop_num), 1, (255, 255, 255)
+    )
+    win.blit(score_label, (win_width - score_label.get_width() - 15, 30))
+
+    score_label = best_font.render("*", 1, (255, 255, 255))
+    win.blit(score_label, best_character_label_pos)
+
     pygame.display.update()
 
 
@@ -64,34 +136,32 @@ def main(genomes, config):
 
     bullets = []
 
-    if gen == 0:
-        with open(
-            os.path.join("pickles", "best_zombies.pickle"), "wb"
-        ) as z_handle:
-            zombies, _, z_nets = z_f.setup(num_zombies)
-            pickle.dump(
-                z_nets,
-                z_handle,
-                protocol=pickle.HIGHEST_PROTOCOL,
-            )
-        with open(
-            os.path.join("pickles", "best_citizens.pickle"), "wb"
-        ) as c_handle:
-            citizens, _, c_nets = c_f.setup(num_citizens)
-            pickle.dump(
-                c_nets,
-                c_handle,
-                protocol=pickle.HIGHEST_PROTOCOL,
-            )
-        with open(
-            os.path.join("pickles", "best_soldiers.pickle"), "wb"
-        ) as s_handle:
-            soldiers, _, s_nets = s_f.setup(num_soldiers)
-            pickle.dump(
-                s_nets,
-                s_handle,
-                protocol=pickle.HIGHEST_PROTOCOL,
-            )
+    # Start from beginning
+    with open(os.path.join("pickles", "best_zombies.pickle"), "wb") as z_handle:
+        zombies, _, z_nets = z_f.setup(num_zombies)
+        pickle.dump(
+            z_nets[0],
+            z_handle,
+            protocol=pickle.HIGHEST_PROTOCOL,
+        )
+    with open(
+        os.path.join("pickles", "best_citizens.pickle"), "wb"
+    ) as c_handle:
+        citizens, _, c_nets = c_f.setup(num_citizens)
+        pickle.dump(
+            c_nets[0],
+            c_handle,
+            protocol=pickle.HIGHEST_PROTOCOL,
+        )
+    with open(
+        os.path.join("pickles", "best_soldiers.pickle"), "wb"
+    ) as s_handle:
+        soldiers, _, s_nets = s_f.setup(num_soldiers)
+        pickle.dump(
+            s_nets[0],
+            s_handle,
+            protocol=pickle.HIGHEST_PROTOCOL,
+        )
 
     gen += 1
     # Grab data from pickle files
@@ -100,35 +170,41 @@ def main(genomes, config):
         with open(
             os.path.join("pickles", "best_citizens.pickle"), "rb"
         ) as c_handle:
-            c_nets = pickle.load(c_handle)
+            c_net = pickle.load(c_handle)
+            c_nets = [c_net for i in range(num_citizens)]
             citizens = c_f.generate(num_citizens)
         with open(
             os.path.join("pickles", "best_soldiers.pickle"), "rb"
         ) as s_handle:
-            s_nets = pickle.load(s_handle)
+            s_net = pickle.load(s_handle)
+            s_nets = [s_net for i in range(num_soldiers)]
             soldiers = s_f.generate(num_soldiers)
     elif counter == 1:
         with open(
             os.path.join("pickles", "best_zombies.pickle"), "rb"
         ) as z_handle:
-            z_nets = pickle.load(z_handle)
+            z_net = pickle.load(z_handle)
+            z_nets = [z_net for i in range(num_zombies)]
             zombies = z_f.generate(num_zombies)
         citizens, ge, c_nets = c_f.setup(num_citizens, genomes=genomes)
         with open(
             os.path.join("pickles", "best_soldiers.pickle"), "rb"
         ) as s_handle:
-            s_nets = pickle.load(s_handle)
+            s_net = pickle.load(s_handle)
+            s_nets = [s_net for i in range(num_soldiers)]
             soldiers = s_f.generate(num_soldiers)
     elif counter == 2:
         with open(
             os.path.join("pickles", "best_zombies.pickle"), "rb"
         ) as z_handle:
-            z_nets = pickle.load(z_handle)
+            z_net = pickle.load(z_handle)
+            z_nets = [z_net for i in range(num_zombies)]
             zombies = z_f.generate(num_zombies)
         with open(
             os.path.join("pickles", "best_citizens.pickle"), "rb"
         ) as c_handle:
-            c_nets = pickle.load(c_handle)
+            c_net = pickle.load(c_handle)
+            c_nets = [c_net for i in range(num_citizens)]
             citizens = c_f.generate(num_citizens)
         soldiers, ge, s_nets = s_f.setup(num_soldiers, genomes=genomes)
 
@@ -136,12 +212,14 @@ def main(genomes, config):
     # Run the simulation
     while (
         run
-        and len(soldiers) > 0
-        or len(citizens) > 0
+        and (len(soldiers) > 0 or len(citizens) > 0)
         and len(zombies) > 0
         and len(ge) > 0
+        and tick_count < seconds_per_run * fps
     ):
-        clock.tick(30)
+        clock.tick(fps)
+        max_fitness = None
+        min_fitness = None
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
@@ -151,8 +229,8 @@ def main(genomes, config):
         tick_count += 1
         # Character interaction logic
         for x, zombie in enumerate(zombies):
-            if counter == 0:
-                ge[x].fitness += 0.1
+            # if counter == 0:
+            #     ge[x].fitness += 0.1
             output = z_nets[x].activate(
                 (
                     closest(zombie, zombies)[0],
@@ -166,9 +244,24 @@ def main(genomes, config):
             zombie.vel = (output[0], output[1])
             zombie.move(game_map)
 
+            if counter == 0:
+                try:
+                    max_fitness = max([g.fitness for g in ge])
+                    min_fitness = min([g.fitness for g in ge])
+                except ValueError:
+                    max_fitness = 0
+                    min_fitness = 0
+
         for x, citizen in enumerate(citizens):
             if counter == 1:
-                ge[x].fitness += 0.1
+                ge[x].fitness -= 0.1
+                ge[x].fitness -= (
+                    pygame.Vector2(
+                        closest(citizen, zombies)[0],
+                        closest(citizen, zombies)[1],
+                    ).magnitude()
+                    / tick_count
+                )
             output = c_nets[x].activate(
                 (
                     closest(citizen, zombies)[0],
@@ -189,21 +282,29 @@ def main(genomes, config):
                         citizen.position[1] - zombie.position[1],
                     ),
                 )
-                if overlap:
-                    print("overlapped")
-                    # if counter == 1:
-                    #     ge.pop(x - 1)
-                    # c_nets.pop(x - 1)
-                    # citizens.pop(x - 1)
-                    # zombies.append(Zombie(citizen.position))
-                    # z_nets.append(z_nets[zombies.index(zombie)])
-                    # if counter == 0:
-                    #     ge.append(ge[zombies.index(zombie)])
-                    # ge[x].fitness += 1
+                if overlap and citizen in citizens:
+                    if counter == 1:
+                        ge.pop(x)
+                    c_nets.pop(x)
+                    popped_citizen = citizens.pop(x)
+                    zombies.append(Zombie(popped_citizen.position))
+                    z_nets.append(z_nets[zombies.index(zombie)])
+                    if counter == 0:
+                        ge[zombies.index(zombie)].fitness += 5
+                        ge.append(ge[zombies.index(zombie)])
+                    for g in ge:
+                        g.fitness += 5
+            if counter == 1:
+                try:
+                    max_fitness = max([g.fitness for g in ge])
+                    min_fitness = min([g.fitness for g in ge])
+                except ValueError:
+                    max_fitness = 0
+                    min_fitness = 0
 
         for x, soldier in enumerate(soldiers):
-            if counter == 1:
-                ge[x].fitness += 0.1
+            if counter == 2:
+                ge[x].fitness -= 0.01
             output = s_nets[x].activate(
                 (
                     closest(soldier, zombies)[0],
@@ -214,6 +315,7 @@ def main(genomes, config):
                     closest(soldier, soldiers)[1],
                 )
             )
+            soldier.reload_count += 1
             soldier.vel = (output[0], output[1])
             soldier.move(game_map)
             for zombie in zombies:
@@ -224,18 +326,30 @@ def main(genomes, config):
                         soldier.position[1] - zombie.position[1],
                     ),
                 )
-                if overlap:
-                    if counter == 1:
-                        ge.pop(x - 1)
-                #     s_nets.pop(x-1)
-                #     soldiers.pop(x-1)
-                #     zombies.append(Zombie(soldier.position))
-                #     z_nets.append(z_nets[zombies.index(zombie)])
-                #     if counter == 0:
-                #         ge.append(ge[zombies.index(zombie)])
-                #     ge[x].fitness += 1
-            if output[2] > 0.5:
+                if overlap and soldier in soldiers:
+                    if counter == 2:
+                        ge.pop(x)
+                    s_nets.pop(x)
+                    popped_soldier = soldiers.pop(x)
+                    zombies.append(Zombie(popped_soldier.position))
+                    z_nets.append(z_nets[zombies.index(zombie)])
+                    if counter == 0:
+                        ge[zombies.index(zombie)].fitness += 10
+                        ge.append(ge[zombies.index(zombie)])
+                    for g in ge:
+                        g.fitness += 5
+            if (
+                output[2] > 0.5
+                and soldier.reload_count / fps > soldier.secs_to_reload
+            ):
                 bullets.append(soldier.shoot())
+            if counter == 2:
+                try:
+                    max_fitness = max([g.fitness for g in ge])
+                    min_fitness = min([g.fitness for g in ge])
+                except ValueError:
+                    max_fitness = 0
+                    min_fitness = 0
 
         # Bullet logic
         for bullet in bullets:
@@ -249,16 +363,20 @@ def main(genomes, config):
                     ),
                 )
                 if overlap:
+                    for g in ge:
+                        g.fitness -= 1
                     if bullet in bullets:
                         bullets.remove(bullet)
                     if counter == 0:
-                        ge.pop(x - 1)
-                    zombies.pop(x - 1)
-                    z_nets.pop(x - 1)
+                        ge.pop(x)
+                    zombies.pop(x)
+                    z_nets.pop(x)
                     if counter == 2:
-                        ge[soldiers.index(bullet.soldier)].fitness -= 1
-                    for g in ge:
-                        g.fitness -= 1
+                        try:
+                            ge[soldiers.index(bullet.soldier)].fitness -= 5
+                        except ValueError:
+                            # if they are already dead
+                            pass
             for x, citizen in enumerate(citizens):
                 overlap = citizen.mask.overlap(
                     bullet.mask,
@@ -270,13 +388,18 @@ def main(genomes, config):
                 if overlap:
                     if bullet in bullets:
                         bullets.remove(bullet)
+                    for g in ge:
+                        g.fitness += 1
                     if counter == 1:
-                        ge.pop(x - 1)
+                        ge.pop(x)
                     if citizen in citizens:
-                        citizens.pop(x - 1)
+                        citizens.pop(x)
                     if counter == 2:
-                        ge[soldiers.index(bullet.soldier)].fitness += 1
-                    ge[x].fitness += 1
+                        try:
+                            ge[soldiers.index(bullet.soldier)].fitness += 5
+                        except ValueError:
+                            # if they are already dead
+                            pass
             for x, soldier in enumerate(soldiers):
                 overlap = soldier.mask.overlap(
                     bullet.mask,
@@ -288,37 +411,66 @@ def main(genomes, config):
                 if overlap:
                     if bullet in bullets:
                         bullets.remove(bullet)
+                    for g in ge:
+                        g.fitness += 1
                     if counter == 2:
-                        ge.pop(x - 1)
+                        try:
+                            ge[soldiers.index(bullet.soldier)].fitness += 5
+                        except ValueError:
+                            # if they are already dead
+                            pass
+                        ge.pop(x)
                     if soldier in soldiers:
-                        soldiers.pop(x - 1)
-                    if counter == 2:
-                        ge[soldiers.index(bullet.soldier)].fitness += 1
-                    ge[x].fitness += 1
+                        soldiers.pop(x)
             if move == "out" and bullet in bullets:
                 bullets.remove(bullet)
+        try:
+            best_index = get_best_index(counter, ge)
+            if counter == 0:
+                best_position = zombies[best_index].position
+            elif counter == 1:
+                best_position = citizens[best_index].position
+            elif counter == 2:
+                best_position = soldiers[best_index].position
+        except IndexError:
+            best_position = (-100, -100)
+        except ValueError:
+            best_position = (-100, -100)
+        draw_window(
+            win,
+            game_map,
+            zombies,
+            citizens,
+            soldiers,
+            bullets,
+            tick_count,
+            max_fitness,
+            min_fitness,
+            best_position,
+        )
 
-        draw_window(win, game_map, zombies, citizens, soldiers, bullets)
+    if counter == 0:
+        nets = z_nets
+    elif counter == 1:
+        nets = c_nets
+    elif counter == 2:
+        nets = s_nets
 
+    best_index = get_best_index(counter, ge)
 
-def closest(base_character, character_list):
-    character_list = character_list.copy()
-    if base_character in character_list:
-        character_list.remove(base_character)
     try:
-        closest = character_list[0]
+        if len(nets) > 0:
+            with open(
+                os.path.join("pickles", f"best_{characters_testing}.pickle"),
+                "wb",
+            ) as handle:
+                pickle.dump(
+                    nets[best_index],
+                    handle,
+                    protocol=pickle.HIGHEST_PROTOCOL,
+                )
     except IndexError:
-        return (-1, -1)
-    for character in character_list:
-        if (
-            pygame.Vector2(character.position)
-            - pygame.Vector2(base_character.position)
-        ).magnitude() < (
-            pygame.Vector2(closest.position)
-            - pygame.Vector2(base_character.position)
-        ).magnitude():
-            closest = character
-    return closest.position
+        pass
 
 
 if __name__ == "__main__":
@@ -327,7 +479,14 @@ if __name__ == "__main__":
     from fitness.soldiers import fitness as s_f
 
     for loop in range(loops):
+        loop_num = loop
         counter = loop % 3
+        if counter == 0:
+            characters_testing = "zombies"
+        elif counter == 1:
+            characters_testing = "citizens"
+        elif counter == 2:
+            characters_testing = "soldiers"
         # 0 = Zombies
         # 1 = Citizens
         # 2 = Soldiers
