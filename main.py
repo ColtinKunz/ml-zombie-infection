@@ -9,7 +9,7 @@ win_width = 512
 win_height = 512
 stat_font = pygame.font.SysFont("comicsans", 12)
 best_font = pygame.font.SysFont("comicsans", 50)
-draw_lines = False
+draw_stats = False
 
 fps = 60
 seconds_per_run = 10
@@ -69,54 +69,57 @@ def draw_window(
     for bullet in bullets:
         bullet.draw(win)
 
-    # score
-    score_label = stat_font.render(
-        "Tick Count: " + str(tick_count), 1, (255, 255, 255)
-    )
-    win.blit(score_label, (win_width - score_label.get_width() - 15, 10))
-    score_label = stat_font.render(
-        "Seconds Passed: " + str(round(tick_count / fps)), 1, (255, 255, 255)
-    )
-    win.blit(score_label, (win_width - score_label.get_width() - 15, 50))
+    if draw_stats:
+        # score
+        score_label = stat_font.render(
+            "Tick Count: " + str(tick_count), 1, (255, 255, 255)
+        )
+        win.blit(score_label, (win_width - score_label.get_width() - 15, 10))
+        score_label = stat_font.render(
+            "Seconds Passed: " + str(round(tick_count / fps)),
+            1,
+            (255, 255, 255),
+        )
+        win.blit(score_label, (win_width - score_label.get_width() - 15, 50))
 
-    # generations
-    score_label = stat_font.render(
-        "Highest Fitness: " + str(round(max_fitness)), 1, (255, 255, 255)
-    )
-    win.blit(score_label, (10, 10))
+        # generations
+        score_label = stat_font.render(
+            "Highest Fitness: " + str(round(max_fitness)), 1, (255, 255, 255)
+        )
+        win.blit(score_label, (10, 10))
 
-    score_label = stat_font.render(
-        "Lowest Fitness: " + str(round(min_fitness)), 1, (255, 255, 255)
-    )
-    win.blit(score_label, (10, 25))
+        score_label = stat_font.render(
+            "Lowest Fitness: " + str(round(min_fitness)), 1, (255, 255, 255)
+        )
+        win.blit(score_label, (10, 25))
 
-    score_label = stat_font.render(
-        "Zombies Alive: " + str(len(zombies)), 1, (255, 255, 255)
-    )
-    win.blit(score_label, (10, 100))
+        score_label = stat_font.render(
+            "Zombies Alive: " + str(len(zombies)), 1, (255, 255, 255)
+        )
+        win.blit(score_label, (10, 100))
 
-    score_label = stat_font.render(
-        "Citizens Alive: " + str(len(citizens)), 1, (255, 255, 255)
-    )
-    win.blit(score_label, (10, 140))
+        score_label = stat_font.render(
+            "Citizens Alive: " + str(len(citizens)), 1, (255, 255, 255)
+        )
+        win.blit(score_label, (10, 140))
 
-    score_label = stat_font.render(
-        "Soldiers Alive: " + str(len(soldiers)), 1, (255, 255, 255)
-    )
-    win.blit(score_label, (10, 60))
+        score_label = stat_font.render(
+            "Soldiers Alive: " + str(len(soldiers)), 1, (255, 255, 255)
+        )
+        win.blit(score_label, (10, 60))
 
-    score_label = stat_font.render(
-        "Characters Testing: " + characters_testing, 1, (255, 255, 255)
-    )
-    win.blit(score_label, (10, 200))
+        score_label = stat_font.render(
+            "Characters Testing: " + characters_testing, 1, (255, 255, 255)
+        )
+        win.blit(score_label, (10, 200))
 
-    score_label = stat_font.render(
-        "Loop Number: " + str(loop_num), 1, (255, 255, 255)
-    )
-    win.blit(score_label, (win_width - score_label.get_width() - 15, 30))
+        score_label = stat_font.render(
+            "Loop Number: " + str(loop_num), 1, (255, 255, 255)
+        )
+        win.blit(score_label, (win_width - score_label.get_width() - 15, 30))
 
-    score_label = best_font.render("*", 1, (255, 255, 255))
-    win.blit(score_label, best_character_label_pos)
+        score_label = best_font.render("*", 1, (255, 255, 255))
+        win.blit(score_label, best_character_label_pos)
 
     pygame.display.update()
 
