@@ -37,6 +37,7 @@ class Character:
         self.max_vel = 5
         self.speed = 3
         self.img = None
+        self.is_dead = False
 
         self.position = position
         self.vel = (0, 0)
@@ -48,39 +49,47 @@ class Character:
         )
 
     def move(self, game_map):
-        direction = pygame.Vector2((0, 0)) + pygame.Vector2(self.vel)
-        overlap = game_map.mask.overlap(
-            self.mask,
-            self.position + direction * self.speed,
-        )
-        if overlap:
-            x_direction = pygame.Vector2((self.vel[0], 0))
-            x_overlap = game_map.mask.overlap(
+        if not self.is_dead:
+            direction = pygame.Vector2((0, 0)) + pygame.Vector2(self.vel)
+            overlap = game_map.mask.overlap(
                 self.mask,
-                self.position
-                + pygame.Vector2((0, 0))
-                + x_direction * self.speed,
+                self.position + direction * self.speed,
             )
-            y_direction = pygame.Vector2((0, self.vel[1]))
-            y_overlap = game_map.mask.overlap(
-                self.mask,
-                self.position
-                + pygame.Vector2((0, 0))
-                + y_direction * self.speed,
-            )
-            if not x_overlap:
-                direction = pygame.Vector2((0, 0)) + x_direction
-            elif not y_overlap:
-                direction = pygame.Vector2((0, 0)) + y_direction
-            else:
-                return
-
+            if overlap:
+                x_direction = pygame.Vector2((self.vel[0], 0))
+                x_overlap = game_map.mask.overlap(
+                    self.mask,
+                    self.position
+                    + pygame.Vector2((0, 0))
+                    + x_direction * self.speed,
+                )
+                y_direction = pygame.Vector2((0, self.vel[1]))
+                y_overlap = game_map.mask.overlap(
+                    self.mask,
+                    self.position
+                    + pygame.Vector2((0, 0))
+                    + y_direction * self.speed,
+                )
+                if not x_overlap:
+                    direction = pygame.Vector2((0, 0)) + x_direction
+                elif not y_overlap:
+                    direction = pygame.Vector2((0, 0)) + y_direction
+                else:
+                    return
         if direction != pygame.Vector2(0, 0):
             direction.normalize_ip()
             self.position += direction * self.speed
 
     def draw(self, win):
-        win.blit(self.img, self.position)
+        if self.is_dead:
+            dead_image = self.img.copy().convert_alpha()
+            dead_image.set_alpha(33)
+            win.blit(
+                dead_image,
+                self.position,
+            )
+        else:
+            win.blit(self.img, self.position)
 
     def get_mask(self):
         """
@@ -97,7 +106,7 @@ class Zombie(Character):
     def __init__(self, position):
         Character.__init__(self, position)
         self.img = zombie_img
-        self.speed = 1
+        self.speed = 3.5
         self.mask = self.get_mask()
 
 
@@ -126,23 +135,13 @@ class Soldier(Character):
         self.reload_count = 0
         self.secs_to_reload = 0.1
 
-    def shoot(self):
+    def shoot(self, x, y):
         self.reload_count = 0
         return Bullet(
             self.position,
             (
-                choice(
-                    [
-                        randint(-self.distance_measure, -1),
-                        randint(1, self.distance_measure),
-                    ]
-                ),
-                choice(
-                    [
-                        randint(-self.distance_measure, -1),
-                        randint(1, self.distance_measure),
-                    ]
-                ),
+                x,
+                y,
             ),
             self,
         )
