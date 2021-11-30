@@ -50,6 +50,14 @@ class Character:
 
     def move(self, game_map):
         if not self.is_dead:
+            # if self.vel[0] > 1:
+            #     self.vel = (1, self.vel[1])
+            # elif self.vel[0] < -1:
+            #     self.vel = (-1, self.vel[1])
+            # if self.vel[1] > 1:
+            #     self.vel = (self.vel[0], 1)
+            # elif self.vel[1] < -1:
+            #     self.vel = (self.vel[0], -1)
             direction = pygame.Vector2((0, 0)) + pygame.Vector2(self.vel)
             overlap = game_map.mask.overlap(
                 self.mask,
