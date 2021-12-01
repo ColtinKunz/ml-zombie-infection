@@ -5,6 +5,12 @@ import pygame
 from random import randint
 
 
+def create_map():
+    from map import Map
+
+    return Map()
+
+
 def closest(base_character, character_list):
     character_list = character_list.copy()
     if base_character in character_list:
