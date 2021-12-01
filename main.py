@@ -3,6 +3,7 @@ import pickle
 import pygame
 
 from utils import (
+    create_map,
     closest,
     closest_list,
     get_best_index_list,
@@ -41,6 +42,7 @@ bg_img = pygame.transform.scale2x(
 num_zombies = 5
 num_citizens = 40
 num_soldiers = 5
+game_map = create_map()
 
 
 def draw_window(
@@ -155,9 +157,6 @@ def main(genomes, config):
     from fitness.citizens import fitness as c_f
     from fitness.soldiers import fitness as s_f
     from characters import Zombie
-    from map import Map
-
-    game_map = Map()
 
     bullets = []
 
