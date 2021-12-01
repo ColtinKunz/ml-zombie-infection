@@ -1,7 +1,10 @@
 import os
 import pygame
 
-from random import randint, choice
+from random import randint
+
+from main import game_map
+from utils import spawn
 
 citizen_img = pygame.transform.scale2x(
     pygame.image.load(
@@ -34,6 +37,7 @@ class Character:
         :param y: starting y pos (int)
         :return: None
         """
+
         self.max_vel = 5
         self.speed = 3
         self.img = None
@@ -116,6 +120,7 @@ class Zombie(Character):
         self.img = zombie_img
         self.speed = 3.5
         self.mask = self.get_mask()
+        self.position = spawn(self, position, game_map)
 
 
 class Citizen(Character):
@@ -127,6 +132,7 @@ class Citizen(Character):
         Character.__init__(self, position)
         self.img = citizen_img
         self.mask = self.get_mask()
+        self.position = spawn(self, position, game_map)
 
 
 class Soldier(Character):
@@ -138,6 +144,7 @@ class Soldier(Character):
         Character.__init__(self, position)
         self.img = soldier_img
         self.mask = self.get_mask()
+        self.position = spawn(self, position, game_map)
         self.distance_measure = 10
 
         self.reload_count = 0
