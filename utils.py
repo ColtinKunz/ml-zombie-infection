@@ -18,9 +18,6 @@ def closest(base_character, character_list):
             character, base_character
         ) < get_character_distance(closest_character, base_character):
             closest_character = character
-    if closest_character.is_dead:
-        print("bruh")
-
     return closest_character.position
 
 
