@@ -219,10 +219,11 @@ def main(genomes, config):
             if not zombie.is_dead:
                 output = z_nets[x].activate(
                     tuple(
-                        closest_list(zombie, alive_zombies, 5)
-                        + closest_list(zombie, alive_citizens, 5)
-                        + closest_list(zombie, alive_soldiers, 5)
-                    )
+                        [zombie.position[0], zombie.position[1]]
+                        + closest_list(zombie, alive_zombies, num_closest)
+                        + closest_list(zombie, alive_citizens, num_closest)
+                        + closest_list(zombie, alive_soldiers, num_closest),
+                    ),
                 )
                 zombie.vel = (output[0], output[1])
                 zombie.move(game_map)
@@ -245,13 +246,12 @@ def main(genomes, config):
                     / (fps * 10)
                 )
             output = c_nets[x].activate(
-                (
-                    tuple(
-                        closest_list(citizen, alive_zombies, 5)
-                        + closest_list(citizen, alive_citizens, 5)
-                        + closest_list(citizen, alive_soldiers, 5)
-                    )
-                )
+                tuple(
+                    [citizen.position[0], citizen.position[1]]
+                    + closest_list(citizen, alive_zombies, num_closest)
+                    + closest_list(citizen, alive_citizens, num_closest)
+                    + closest_list(citizen, alive_soldiers, num_closest),
+                ),
             )
 
         for citizen in alive_citizens:
@@ -289,13 +289,12 @@ def main(genomes, config):
                 if counter == 2:
                     ge[x].fitness += 0.01
                 output = s_nets[x].activate(
-                    (
-                        tuple(
-                            closest_list(soldier, alive_zombies, 5)
-                            + closest_list(soldier, alive_citizens, 5)
-                            + closest_list(soldier, alive_soldiers, 5)
-                        )
-                    )
+                    tuple(
+                        [soldier.position[0], soldier.position[1]]
+                        + closest_list(soldier, alive_zombies, num_closest)
+                        + closest_list(soldier, alive_citizens, num_closest)
+                        + closest_list(soldier, alive_soldiers, num_closest),
+                    ),
                 )
                 soldier.reload_count += 1
                 soldier.vel = (output[0], output[1])
