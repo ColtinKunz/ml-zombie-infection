@@ -21,7 +21,7 @@ draw_stats = True
 
 overwrite_current_pickles = True
 
-fps = 120
+fps = 60
 seconds_per_run = 5
 
 generations_each = 10000
@@ -40,8 +40,11 @@ bg_img = pygame.transform.scale2x(
 # IF THESE NUMBERS CHANGE, THEY MUST ALSO CHANGE IN THE RESPECTIVE CONFIG FILE
 # pop_size = <num_characters>
 num_zombies = 5
-num_citizens = 40
-num_soldiers = 5
+num_citizens = 20
+num_soldiers = 10
+
+num_closest = 35
+
 game_map = create_map()
 
 
