@@ -174,10 +174,7 @@ class Bullet:
         self.mask = pygame.mask.from_surface(self.surface)
 
     def move(self, game_map):
-        overlap = game_map.mask.overlap(
-            self.mask,
-            self.position + self.direction * self.speed,
-        )
+        overlap = game_map.mask.overlap(self.mask, self.position)
         if self.direction != pygame.Vector2(0, 0) and not overlap:
             self.direction.normalize_ip()
             self.position += self.direction * self.speed
