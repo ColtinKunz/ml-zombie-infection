@@ -3,6 +3,7 @@ import pickle
 import pygame
 
 from random import randint
+from math import atan2, degrees, pi
 
 
 def create_map():
@@ -27,7 +28,9 @@ def closest(base_character, character_list):
     return closest_character.position
 
 
-def closest_list(base_character, character_list, num_closest):
+def closest_list(
+    base_character, character_list, num_closest, return_relative_position=False
+):
     # Initialize lists
     character_list = character_list.copy()
     closest_list = [character for character in character_list[0:num_closest]]
@@ -52,10 +55,21 @@ def closest_list(base_character, character_list, num_closest):
     # Return only the positions
     closest_pos_list = []
     for c in closest_list:
-        closest_pos_list += list(split_position(c.position))
+        if return_relative_position:
+            closest_pos_list += list(split_position(c.position))
+        else:
+            closest_pos_list += list(relative_position(base_character, c))
     while len(closest_pos_list) < num_closest * 2:
         closest_pos_list.append(-10000)
     return closest_pos_list
+
+
+def relative_position(c1, c2):
+    dx = c2.position[0] - c1.position[0]
+    dy = c2.position[1] - c1.position[1]
+    rads = atan2(-dy, dx)
+    rads %= 2 * pi
+    return get_character_distance(c1, c2), degrees(rads)
 
 
 def split_position(pos):
