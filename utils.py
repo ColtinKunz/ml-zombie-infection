@@ -118,3 +118,32 @@ def pickle_results(
 def load_pickle(num_characters, fitness, file_name):
     with open(os.path.join("pickles", file_name), "rb") as handle:
         return pickle.load(handle), fitness.generate(num_characters)
+
+
+def spawn(character, position, game_map):
+    from main import win_width, win_height
+
+    overlap = game_map.mask.overlap(
+        character.get_mask(),
+        character.position,
+    )
+    if overlap:
+        new_position = (0, 0)
+        new_position = (
+            new_position[0] + 2
+            if new_position[0] > win_width / 2
+            else new_position[0] - 2,
+            new_position[1],
+        )
+        new_position = (
+            new_position[0],
+            new_position[1] + 2
+            if new_position[1] > win_height / 2
+            else new_position[1] - 2,
+        )
+        try:
+            return spawn(character, new_position, game_map)
+        except RecursionError:
+            return position
+    else:
+        return position
