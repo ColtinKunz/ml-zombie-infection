@@ -132,19 +132,6 @@ def draw_window(
         )
         win.blit(score_label, (win_width - score_label.get_width() - 15, 30))
 
-        # if counter == 1:
-        #     for x, citizen in enumerate(citizens):
-        #         score_label = stat_font.render(
-        #             f"{round(genome[x].fitness)}", 1, (255, 255, 255)
-        #         )
-        #         win.blit(score_label, citizen.position)
-        #         score_label = stat_font.render(
-        #             f"{round(citizen.is_dead)}", 1, (255, 255, 255)
-        #         )
-        #         win.blit(
-        #             score_label, (citizen.position[0], citizen.position[1] - 15)
-        #         )
-
     pygame.display.update()
 
 
