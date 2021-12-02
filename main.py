@@ -232,7 +232,7 @@ def main(genomes, config):
                         closest(citizen, alive_zombies)[0],
                         closest(citizen, alive_zombies)[1],
                     ).magnitude()
-                    / (fps * 10)
+                    / (1000)
                 )
             output = c_nets[x].activate(
                 tuple(
