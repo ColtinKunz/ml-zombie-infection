@@ -65,11 +65,9 @@ def closest_list(
 
 
 def relative_position(c1, c2):
-    dx = c2.position[0] - c1.position[0]
-    dy = c2.position[1] - c1.position[1]
-    rads = atan2(-dy, dx)
-    rads %= 2 * pi
-    return get_character_distance(c1, c2), degrees(rads)
+    return get_character_distance(c1, c2), pygame.Vector2(c1.vel).angle_to(
+        c2.vel
+    )
 
 
 def split_position(pos):
