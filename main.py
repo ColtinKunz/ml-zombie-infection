@@ -334,12 +334,6 @@ def main(genomes, config):
                     ),
                 )
                 if overlap:
-                    for g in ge:
-                        if counter == 0:
-                            g.fitness -= 1
-                        else:
-                            g.fitness += 1
-
                     if bullet in bullets:
                         bullets.remove(bullet)
                     zombie.is_dead = True
@@ -361,11 +355,6 @@ def main(genomes, config):
                 if overlap:
                     if not citizen.is_dead and bullet in bullets:
                         bullets.remove(bullet)
-                    for g in ge:
-                        if counter == 0:
-                            g.fitness += 1
-                        else:
-                            g.fitness -= 1
                     if not citizen.is_dead:
                         citizen.is_dead = True
                         alive_citizens.remove(citizen)
@@ -386,11 +375,6 @@ def main(genomes, config):
                 if overlap:
                     if not soldier.is_dead and bullet in bullets:
                         bullets.remove(bullet)
-                    for g in ge:
-                        if counter == 0:
-                            g.fitness += 1
-                        else:
-                            g.fitness -= 1
                     if not soldier.is_dead:
                         if counter == 2:
                             try:
