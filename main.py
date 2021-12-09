@@ -379,7 +379,7 @@ def main(genomes, config):
                     if not soldier.is_dead:
                         if counter == 2:
                             try:
-                                ge[soldiers.index(bullet.soldier)].fitness += 25
+                                ge[soldiers.index(bullet.soldier)].fitness -= 25
                             except ValueError:
                                 # if they are already dead
                                 pass
