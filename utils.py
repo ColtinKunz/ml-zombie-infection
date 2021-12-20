@@ -1,9 +1,12 @@
 import os
 import pickle
 import pygame
+import numpy as np
+import math
 
-from random import randint
-from math import atan2, degrees, pi
+from random import randint, choice
+
+from characters import Zombie, Citizen, Soldier
 
 
 def create_map():
@@ -89,79 +92,141 @@ def alive_count(character_list):
     return count
 
 
-def get_best_index_list(counter, ge):
-    sorted_ge = ge.copy()
-    sorted_ge.sort(reverse=True, key=lambda g: g.fitness)
-    return [ge.index(g) for g in sorted_ge[0:5]]
+def get_best_list(characters, num_best):
+    sorted_characters = characters.copy()
+    sorted_characters.sort(reverse=True, key=lambda c: c.fitness)
+    return [character for character in sorted_characters[0:num_best]]
+
+
+def format_weights(character):
+    return {
+        "ih": character.w_input_hidden,
+        "hh": character.w_hidden_hidden,
+        "ho": character.w_hidden_output,
+    }
 
 
 def pickle_results(
-    num_characters,
     file_name,
-    nets,
-    best_index_list=None,
+    characters,
 ):
+    best_list = [
+        format_weights(character) for character in get_best_list(characters, 5)
+    ]
+    general_list = [format_weights(character) for character in characters]
     with open(os.path.join("pickles", file_name), "wb") as handle:
-        if best_index_list is None:
-            pickle.dump(
-                nets,
-                handle,
-                protocol=pickle.HIGHEST_PROTOCOL,
-            )
-        else:
-            best_list = []
-            best_net = nets.pop(best_index_list[0])
-            [
-                best_list.append(best_net)
-                for i in range(round(num_characters / 2))
-            ]
-            net = nets.pop(best_index_list[1])
-            [best_list.append(net) for i in range(round(num_characters / 4))]
-            net = nets.pop(best_index_list[2])
-            [best_list.append(net) for i in range(round(num_characters / 8))]
-            net = nets.pop(best_index_list[3])
-            [best_list.append(net) for i in range(round(num_characters / 16))]
-            net = nets.pop(best_index_list[4])
-            [best_list.append(net) for i in range(round(num_characters / 32))]
-            while num_characters - len(best_list) > 1:
-                best_list.append(best_net)
-            best_list.append(nets[randint(0, len(nets))])
-            pickle.dump(
-                best_list,
-                handle,
-                protocol=pickle.HIGHEST_PROTOCOL,
-            )
+        pickle.dump(
+            (best_list, general_list),
+            handle,
+            protocol=pickle.HIGHEST_PROTOCOL,
+        )
 
 
-def load_pickle(num_characters, fitness, file_name):
-    with open(os.path.join("pickles", file_name), "rb") as handle:
-        return pickle.load(handle), fitness.generate(num_characters)
-
-
-def spawn(character, position, game_map):
-    from main import win_width, win_height
-
-    overlap = game_map.mask.overlap(
-        character.get_mask(),
-        character.position,
+def mutate_character(character, all_weights):
+    random_char_weights = choice(all_weights)
+    mutated_character = character
+    mutated_character.w_input_hidden = np.mean(
+        character.w_input_hidden, random_char_weights["ih"]
     )
-    if overlap:
-        new_position = (0, 0)
-        new_position = (
-            new_position[0] + 2
-            if new_position[0] > win_width / 2
-            else new_position[0] - 2,
-            new_position[1],
-        )
-        new_position = (
-            new_position[0],
-            new_position[1] + 2
-            if new_position[1] > win_height / 2
-            else new_position[1] - 2,
-        )
-        try:
-            return spawn(character, new_position, game_map)
-        except RecursionError:
-            return position
-    else:
-        return position
+    mutated_character.w_hidden_hidden = np.mean(
+        character.w_hidden_hidden, random_char_weights["hh"]
+    )
+    mutated_character.w_hidden_output = np.mean(
+        character.w_hidden_output, random_char_weights["ho"]
+    )
+    return mutated_character
+
+
+def load_pickle(num_characters, character_type, mutate=True):
+    with open(
+        os.path.join("pickles", f"best_{character_type}.pickle"), "rb"
+    ) as handle:
+        pickled_weights = pickle.load(handle)
+        best_weights = pickled_weights[0]
+        all_weights = pickled_weights[1]
+
+        characters = []
+
+        # 0-1
+        # Closer to 0, the less better characters will be taken
+        # Closer to 1, the more better characters will be taken
+        elitism = 1
+
+        # Create list of mutated characters
+        current_percent = elitism
+        for bw in best_weights:
+            current_percent /= 2
+            top_character = character_setup(character_type, 1, bw)
+            [
+                characters.append(
+                    mutate_character(top_character, all_weights)
+                    if mutate
+                    else top_character
+                )
+                for i in range(
+                    math.floor(len(num_characters) * current_percent)
+                )
+            ]
+
+        while len(characters) > num_characters:
+            characters.append(
+                mutate_character(choice(characters), all_weights)
+                if mutate
+                else choice(characters)
+            )
+        return characters
+
+
+def character_setup(
+    character_type,
+    num_characters,
+    weights=None,
+):
+    from main import win_width, win_height, num_input_nodes
+
+    ih_weights = weights["ih"] if weights is not None else None
+    hh_weights = weights["hh"] if weights is not None else None
+    ho_weights = weights["ho"] if weights is not None else None
+
+    if character_type == "zombies":
+        characters = [
+            Zombie(
+                (randint(0, win_width), randint(0, win_height)),
+                num_input_nodes,
+                2,
+                w_input_hidden=ih_weights,
+                w_hidden_hidden=hh_weights,
+                w_hidden_output=ho_weights,
+                initial=True,
+            )
+            for _ in range(0, num_characters)
+        ]
+    elif character_type == "citizens":
+        characters = [
+            Citizen(
+                (randint(0, win_width), randint(0, win_height)),
+                num_input_nodes,
+                2,
+                w_input_hidden=ih_weights,
+                w_hidden_hidden=hh_weights,
+                w_hidden_output=ho_weights,
+                initial=True,
+            )
+            for _ in range(0, num_characters)
+        ]
+    elif character_type == "soldiers":
+        characters = [
+            Soldier(
+                (randint(0, win_width), randint(0, win_height)),
+                num_input_nodes,
+                5,
+                w_input_hidden=ih_weights,
+                w_hidden_hidden=hh_weights,
+                w_hidden_output=ho_weights,
+                initial=True,
+            )
+            for _ in range(0, num_characters)
+        ]
+    for c in characters:
+        c.initial_spawn()
+    return characters

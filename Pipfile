@@ -6,6 +6,8 @@ name = "pypi"
 [packages]
 pygame = "*"
 neat-python = "*"
+numpy = "*"
+sklearn = "*"
 
 [dev-packages]
 
