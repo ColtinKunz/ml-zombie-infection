@@ -98,11 +98,19 @@ def get_best_list(characters, num_best):
     return [character for character in sorted_characters[0:num_best]]
 
 
-def format_weights(character):
+def format_weights_character(character):
     return {
         "ih": character.w_input_hidden,
         "hh": character.w_hidden_hidden,
         "ho": character.w_hidden_output,
+    }
+
+
+def format_weights(w_input_hidden, w_hidden_hidden, w_hidden_output):
+    return {
+        "ih": w_input_hidden,
+        "hh": w_hidden_hidden,
+        "ho": w_hidden_output,
     }
 
 
@@ -111,9 +119,12 @@ def pickle_results(
     characters,
 ):
     best_list = [
-        format_weights(character) for character in get_best_list(characters, 5)
+        format_weights_character(character)
+        for character in get_best_list(characters, 5)
     ]
-    general_list = [format_weights(character) for character in characters]
+    general_list = [
+        format_weights_character(character) for character in characters
+    ]
     with open(os.path.join("pickles", file_name), "wb") as handle:
         pickle.dump(
             (best_list, general_list),
@@ -124,17 +135,24 @@ def pickle_results(
 
 def mutate_character(character, all_weights):
     random_char_weights = choice(all_weights)
-    mutated_character = character
-    mutated_character.w_input_hidden = np.mean(
-        character.w_input_hidden, random_char_weights["ih"]
-    )
-    mutated_character.w_hidden_hidden = np.mean(
-        character.w_hidden_hidden, random_char_weights["hh"]
-    )
-    mutated_character.w_hidden_output = np.mean(
-        character.w_hidden_output, random_char_weights["ho"]
-    )
-    return mutated_character
+    w_input_hidden = (
+        np.array(character.w_input_hidden) + np.array(random_char_weights["ih"])
+    ) / 2
+    w_hidden_hidden = (
+        np.array(character.w_hidden_hidden)
+        + np.array(random_char_weights["hh"])
+    ) / 2
+    w_hidden_output = (
+        np.array(character.w_hidden_output)
+        + np.array(random_char_weights["ho"])
+    ) / 2
+    weights = format_weights(w_input_hidden, w_hidden_hidden, w_hidden_output)
+    return character_setup(character.character_type, 1, weights)[0]
+
+
+def respawn(character):
+    character.position = character.initial_spawn()
+    return character
 
 
 def load_pickle(num_characters, character_type, mutate=True):
@@ -156,23 +174,28 @@ def load_pickle(num_characters, character_type, mutate=True):
         current_percent = elitism
         for bw in best_weights:
             current_percent /= 2
-            top_character = character_setup(character_type, 1, bw)
-            [
+            top_character = character_setup(character_type, 1, bw)[0]
+            for _ in range(math.floor(num_characters * current_percent)):
                 characters.append(
                     mutate_character(top_character, all_weights)
                     if mutate
-                    else top_character
+                    else character_setup(
+                        top_character.character_type,
+                        1,
+                        format_weights_character(top_character),
+                    )[0]
                 )
-                for i in range(
-                    math.floor(len(num_characters) * current_percent)
-                )
-            ]
 
-        while len(characters) > num_characters:
+        while len(characters) < num_characters:
+            rand_character = choice(characters)
             characters.append(
-                mutate_character(choice(characters), all_weights)
+                mutate_character(rand_character, all_weights)
                 if mutate
-                else choice(characters)
+                else character_setup(
+                    rand_character.character_type,
+                    1,
+                    format_weights_character(rand_character),
+                )[0]
             )
         return characters
 

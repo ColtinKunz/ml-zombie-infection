@@ -3,7 +3,7 @@ import math
 import pygame
 import numpy as np
 
-from random import uniform
+from random import uniform, randint
 
 citizen_img = pygame.transform.scale2x(
     pygame.image.load(
@@ -65,6 +65,8 @@ class Character:
         self.w_hidden_hidden = w_hidden_hidden
         self.w_hidden_output = w_hidden_output
 
+        self.character_type = None
+
         # If weights are passed then use those, otherwise generate randomly.
         if self.w_input_hidden is None:
             self.w_input_hidden = np.random.uniform(
@@ -113,9 +115,10 @@ class Character:
                     direction = pygame.Vector2((0, 0)) + y_direction
                 else:
                     return
-        if direction != pygame.Vector2(0, 0):
-            direction.normalize_ip()
-            self.position += direction * self.speed
+            if direction != pygame.Vector2(0, 0):
+                direction.normalize_ip()
+                self.position += direction * self.speed
+        return
 
     def draw(self, win):
         if self.is_dead:
@@ -128,31 +131,26 @@ class Character:
         else:
             win.blit(self.img, self.position)
 
-    def initial_spawn(self):
+    def initial_spawn(self, circle=True):
         from main import win_width, win_height
 
-        height = round(win_height * 0.95)
-        width = round(win_width * 0.95)
+        if circle and win_width != win_height:
+            print("Invalid play area. Window height must equal window width.")
+            return
 
-        def elps_axis_calc(x, theta):
-            return x ** 2 * math.sin(theta) ** 2
+        if circle:
+            radius = round(win_height * 0.49)
 
-        center_position = (win_width / 2, win_height / 2)
+            center_position = (win_width / 2, win_height / 2)
+            angle = uniform(0, 360)
 
-        angle = uniform(0, 360)
-        num = height * width
-        den = math.sqrt(
-            elps_axis_calc(height, angle) + elps_axis_calc(width, angle)
-        )
+            spawn_vector = pygame.Vector2(center_position)
+            spawn_vector.x += uniform(0, radius) * math.cos(angle)
+            spawn_vector.y += uniform(0, radius) * math.sin(angle)
 
-        max_distance_spawn = num / den
-
-        spawn_vector = pygame.Vector2(center_position) + pygame.Vector2(
-            uniform(0, max_distance_spawn) * math.cos(angle),
-            uniform(0, max_distance_spawn) * math.sin(angle),
-        )
-
-        return (spawn_vector.x, spawn_vector.y)
+            return (spawn_vector.x, spawn_vector.y)
+        else:
+            return (randint(0, win_width), randint(0, win_height))
 
     def spawn(self, new_position):
         from main import win_width, win_height, game_map
@@ -233,6 +231,7 @@ class Zombie(Character):
         if initial:
             self.position = self.initial_spawn()
         self.position = self.spawn(position)
+        self.character_type = "zombies"
 
 
 class Citizen(Character):
@@ -256,6 +255,7 @@ class Citizen(Character):
         if initial:
             self.position = self.initial_spawn()
         self.position = self.spawn(position)
+        self.character_type = "citizens"
 
 
 class Soldier(Character):
@@ -282,6 +282,7 @@ class Soldier(Character):
 
         self.reload_count = 0
         self.ticks_to_reload = 60
+        self.character_type = "soldiers"
 
     def shoot(self, x, y):
         self.reload_count = 0

@@ -1,6 +1,7 @@
 import os
 import math
 import pygame
+import numpy as np
 
 pygame.font.init()
 win_width = 512
@@ -14,6 +15,7 @@ max_ticks = 500
 loop_index = 0
 
 overwrite_current_pickles = True
+draw = True
 
 character_choices = {"z": "zombies", "c": "citizens", "s": "soldiers"}
 
@@ -21,16 +23,20 @@ characters_testing_string = character_choices["z"]
 
 win = pygame.display.set_mode((win_width, win_height))
 pygame.display.set_caption("Infection")
+central_vector = pygame.Vector2((win_height / 2, win_width / 2))
 
 bg_img = pygame.transform.scale2x(
     pygame.image.load(os.path.join("images", "bg.png")).convert_alpha()
 )
 
-# IF THESE NUMBERS CHANGE, THEY MUST ALSO CHANGE IN THE RESPECTIVE CONFIG FILE
-# pop_size = <num_characters>
-num_zombies = 5
-num_citizens = 20
-num_soldiers = 10
+num_zombies = 10
+num_citizens = 0
+num_soldiers = 20
+
+highest_pop = max(num_zombies, num_citizens, num_soldiers)
+zombie_loops = np.ceil(highest_pop / num_zombies)
+# citizen_loops = np.ceil(highest_pop / num_citizens)
+soldier_loops = np.ceil(highest_pop / num_soldiers)
 
 num_input_nodes = (num_zombies + num_citizens + num_soldiers) * 2
 
@@ -41,7 +47,6 @@ from utils import (  # noqa: E402
     pickle_results,
     load_pickle,
     character_setup,
-    get_best_list,
     closest,
 )
 
@@ -146,29 +151,29 @@ def simulate():
     min_fitness = None
 
     # Start from beginning
-    if overwrite_current_pickles:
+    if overwrite_current_pickles and loop_index == 0:
         zombies = character_setup(character_choices["z"], num_zombies)
         pickle_results("best_zombies.pickle", zombies)
         citizens = character_setup(character_choices["c"], num_citizens)
         pickle_results("best_citizens.pickle", citizens)
         soldiers = character_setup(character_choices["s"], num_soldiers)
         pickle_results("best_soldiers.pickle", soldiers)
-    else:
-        zombies = load_pickle(
-            num_zombies,
-            character_choices["z"],
-            mutate=(True if counter == 0 else False),
-        )
-        citizens = load_pickle(
-            num_citizens,
-            character_choices["c"],
-            mutate=(True if counter == 1 else False),
-        )
-        soldiers = load_pickle(
-            num_soldiers,
-            character_choices["s"],
-            mutate=(True if counter == 2 else False),
-        )
+
+    zombies = load_pickle(
+        num_zombies,
+        character_choices["z"],
+        mutate=(True if counter == 0 else False),
+    )
+    citizens = load_pickle(
+        num_citizens,
+        character_choices["c"],
+        mutate=(True if counter == 1 else False),
+    )
+    soldiers = load_pickle(
+        num_soldiers,
+        character_choices["s"],
+        mutate=(True if counter == 2 else False),
+    )
 
     gen += 1
     # Grab data from pickle files
@@ -206,6 +211,15 @@ def simulate():
             zombie.vel = (output[0], output[1])
             zombie.move(game_map)
 
+            zombie.fitness += (
+                1
+                / (
+                    (
+                        pygame.Vector2(zombie.position) + central_vector
+                    ).magnitude()
+                )
+                * 10
+            )
         for citizen in alive_citizens:
             output = citizen.think(
                 tuple(
@@ -221,8 +235,12 @@ def simulate():
                 pygame.Vector2(
                     closest(citizen, alive_zombies),
                 ).magnitude()
-                / (1000)
+                / 10000
+            ) * 10
+            citizen.fitness += 1 / (
+                (pygame.Vector2(citizen.position) + central_vector).magnitude()
             )
+
             for zombie in zombies:
                 if not citizen.is_dead and not zombie.is_dead:
                     overlap = citizen.mask.overlap(
@@ -236,7 +254,7 @@ def simulate():
                         citizen.is_dead = True
                         alive_citizens.remove(citizen)
                         new_zombie = Zombie(
-                            zombie.position,
+                            citizen.position,
                             num_input_nodes,
                             2,
                             w_input_hidden=zombie.w_input_hidden,
@@ -260,6 +278,15 @@ def simulate():
             soldier.reload_count += 1
             soldier.vel = (output[0], output[1])
             soldier.move(game_map)
+            soldier.fitness += (
+                1
+                / (
+                    (
+                        pygame.Vector2(soldier.position) + central_vector
+                    ).magnitude()
+                )
+                * 10
+            )
             for zombie in zombies:
                 if not soldier.is_dead and not zombie.is_dead:
                     overlap = soldier.mask.overlap(
@@ -273,7 +300,7 @@ def simulate():
                         soldier.is_dead = True
                         alive_soldiers.remove(soldier)
                         new_zombie = Zombie(
-                            zombie.position,
+                            soldier.position,
                             num_input_nodes,
                             2,
                             w_input_hidden=zombie.w_input_hidden,
@@ -321,7 +348,6 @@ def simulate():
                             bullets.remove(bullet)
                         citizen.is_dead = True
                         alive_citizens.remove(citizen)
-                        bullet.soldier.fitness -= 25
             for x, soldier in enumerate(soldiers):
                 overlap = soldier.mask.overlap(
                     bullet.mask,
@@ -336,7 +362,6 @@ def simulate():
                     if not soldier.is_dead:
                         soldier.is_dead = True
                         alive_soldiers.remove(soldier)
-                        bullet.soldier.fitness -= 25
             if move == "out" and bullet in bullets:
                 bullets.remove(bullet)
 
@@ -352,17 +377,18 @@ def simulate():
         max_fitness = characters_testing[0].fitness
         min_fitness = characters_testing[len(characters_testing) - 1].fitness
 
-        draw_window(
-            win,
-            game_map,
-            zombies,
-            citizens,
-            soldiers,
-            bullets,
-            tick_count,
-            max_fitness,
-            min_fitness,
-        )
+        if draw:
+            draw_window(
+                win,
+                game_map,
+                zombies,
+                citizens,
+                soldiers,
+                bullets,
+                tick_count,
+                max_fitness,
+                min_fitness,
+            )
 
     # Only save characters when on the associated counter value
     if counter == 0:
@@ -382,19 +408,25 @@ def simulate():
         )
 
     print(
-        f"{characters_testing_string}: Max = {max_fitness}; Min = {min_fitness}"
+        f"{characters_testing_string}: Max = {np.round(max_fitness, decimals=2)}; Min = {np.round(min_fitness, decimals=2)}; Mean = {np.round(np.mean([c.fitness for c in characters_testing]), decimals=2)}"
     )
 
 
 if __name__ == "__main__":
     while True:
         loop = math.floor(loop_index / 3)
-        counter = loop_index % 3
+        counter = 2
         if counter == 0:
+            sub_loops = zombie_loops
             characters_testing_string = character_choices["z"]
         elif counter == 1:
+            sub_loops = citizen_loops
             characters_testing_string = character_choices["c"]
         elif counter == 2:
+            sub_loops = soldier_loops
             characters_testing_string = character_choices["s"]
-        simulate()
+        sub_counter = 0
+        while sub_loops > sub_counter:
+            simulate()
+            sub_counter += 1
         loop_index += 1
