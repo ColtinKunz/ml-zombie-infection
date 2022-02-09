@@ -4,8 +4,6 @@ import pygame
 import numpy as np
 
 pygame.font.init()
-win_width = 512
-win_height = 512
 stat_font = pygame.font.SysFont("comicsans", 12)
 best_font = pygame.font.SysFont("comicsans", 50)
 draw_stats = True
@@ -16,6 +14,8 @@ loop_index = 0
 
 overwrite_current_pickles = True
 draw = True
+win_width = 1000
+win_height = 1000
 
 character_choices = {"z": "zombies", "c": "citizens", "s": "soldiers"}
 
