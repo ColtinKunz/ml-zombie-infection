@@ -433,8 +433,8 @@ def simulate():
 if __name__ == "__main__":
     while True:
         loop = math.floor(loop_index / 3)
-        counter = 2
-        if counter == 0:
+        counter = 0
+        # counter = loop_index % 3
         if counter == 0 and num_zombies > 0:
             sub_loops = zombie_loops
             characters_testing_string = character_choices["z"]
