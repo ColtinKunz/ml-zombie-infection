@@ -188,18 +188,20 @@ class Character:
 
     def think(self, inputs):
         # Run MLP.
-        def af(x):
-            return np.tanh(x.reshape(-1, 1))  # Activation function
+        def _af(x):
+            return np.tanh(x)  # Activation function
 
-        ih = af(np.dot(self.w_input_hidden, np.array(inputs)))  # Hidden layer 1
+        ih = _af(
+            np.dot(self.w_input_hidden, np.array(inputs))
+        )  # Hidden layer 1
         h_to_h = False
         for x, hh in enumerate(self.w_hidden_hidden):
             if not h_to_h:
-                h = af(np.dot(hh, ih))  # The rest of the hidden layers
+                h = _af(np.dot(hh, ih))  # first hidden layer
                 h_to_h = True
             else:
-                h = af(np.dot(hh, h))  # The rest of the hidden layers
-        return af(np.dot(self.w_hidden_output, h))  # Output layer
+                h = _af(np.dot(hh, h))  # The rest of the hidden layers
+        return _af(np.dot(self.w_hidden_output, h))  # Output layer
 
     def get_weights(self):
         return (
