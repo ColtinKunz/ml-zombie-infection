@@ -189,6 +189,34 @@ def simulate():
     alive_soldiers = soldiers.copy()
 
     tick_count = 0
+
+    def _check_for_infection(human, humans, alive_humans, alive_zombies):
+        for zombie in zombies:
+            if not human.is_dead and not zombie.is_dead:
+                overlap = human.mask.overlap(
+                    zombie.mask,
+                    (
+                        human.position[0] - zombie.position[0],
+                        human.position[1] - zombie.position[1],
+                    ),
+                )
+                if overlap and human in humans:
+                    human.is_dead = True
+                    alive_humans.remove(citizen)
+                    new_zombie = Zombie(
+                        citizen.position,
+                        num_input_nodes,
+                        2,
+                        w_input_hidden=zombie.w_input_hidden,
+                        w_hidden_hidden=zombie.w_hidden_hidden,
+                        w_hidden_output=zombie.w_hidden_output,
+                    )
+                    new_zombie.fitness = zombie.fitness
+                    zombies.append(new_zombie)
+                    alive_zombies.append(new_zombie)
+                    # zombie.fitness += 5
+        return alive_humans, alive_zombies
+
     # Run the simulation
     while (
         run
@@ -257,31 +285,9 @@ def simulate():
                 (pygame.Vector2(citizen.position) + central_vector).magnitude()
             )
 
-            for zombie in zombies:
-                if not citizen.is_dead and not zombie.is_dead:
-                    overlap = citizen.mask.overlap(
-                        zombie.mask,
-                        (
-                            citizen.position[0] - zombie.position[0],
-                            citizen.position[1] - zombie.position[1],
-                        ),
-                    )
-                    if overlap and citizen in citizens:
-                        citizen.is_dead = True
-                        alive_citizens.remove(citizen)
-                        new_zombie = Zombie(
-                            citizen.position,
-                            num_input_nodes,
-                            2,
-                            w_input_hidden=zombie.w_input_hidden,
-                            w_hidden_hidden=zombie.w_hidden_hidden,
-                            w_hidden_output=zombie.w_hidden_output,
-                        )
-                        new_zombie.fitness = zombie.fitness
-                        zombies.append(new_zombie)
-                        alive_zombies.append(new_zombie)
-                        zombie.fitness += 5
-
+            alive_citizens, alive_zombies = _check_for_infection(
+                citizen, citizens, alive_citizens, alive_zombies
+            )
         for soldier in alive_soldiers:
             output = soldier.think(
                 tuple(
@@ -303,36 +309,9 @@ def simulate():
                 )
                 * 10
             )
-            for zombie in zombies:
-                if not soldier.is_dead and not zombie.is_dead:
-                    overlap = soldier.mask.overlap(
-                        zombie.mask,
-                        (
-                            soldier.position[0] - zombie.position[0],
-                            soldier.position[1] - zombie.position[1],
-                        ),
-                    )
-                    if overlap and soldier in soldiers:
-                        soldier.is_dead = True
-                        alive_soldiers.remove(soldier)
-                        new_zombie = Zombie(
-                            soldier.position,
-                            num_input_nodes,
-                            2,
-                            w_input_hidden=zombie.w_input_hidden,
-                            w_hidden_hidden=zombie.w_hidden_hidden,
-                            w_hidden_output=zombie.w_hidden_output,
-                        )
-                        new_zombie.fitness = zombie.fitness
-                        zombies.append(new_zombie)
-                        alive_zombies.append(new_zombie)
-                        zombie.fitness += 5
-            if (
-                output[2] > 0.5
-                and soldier.reload_count > soldier.ticks_to_reload
-            ):
-                bullets.append(soldier.shoot(output[3], output[4]))
-
+            alive_soldiers, alive_zombies = _check_for_infection(
+                soldier, soldiers, alive_soldiers, alive_zombies
+            )
         # Bullet logic
         for bullet in bullets:
             move = bullet.move(game_map)
