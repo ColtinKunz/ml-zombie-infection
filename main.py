@@ -3,19 +3,22 @@ import math
 import pygame
 import numpy as np
 
+
+fps = 90
+real_time = True
+max_ticks = 500
+overwrite_current_pickles = True
+draw = True
+elitism = 0.04
+mutation_rate = 0.1
+
+loop_index = 0
 pygame.font.init()
+win_width = 1000
+win_height = 1000
 stat_font = pygame.font.SysFont("comicsans", 12)
 best_font = pygame.font.SysFont("comicsans", 50)
 draw_stats = True
-
-fps = 60
-max_ticks = 500
-loop_index = 0
-
-overwrite_current_pickles = True
-draw = True
-win_width = 1000
-win_height = 1000
 
 character_choices = {"z": "zombies", "c": "citizens", "s": "soldiers"}
 
