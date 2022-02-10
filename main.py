@@ -416,8 +416,23 @@ def simulate():
             soldiers,
         )
 
+    max_fit_string = (
+        np.round(max_fitness, decimals=2) if max_fitness is not None else "None"
+    )
+    min_fit_string = (
+        np.round(min_fitness, decimals=2) if min_fitness is not None else "None"
+    )
+    try:
+        mean_fit_string = np.round(
+            np.mean([c.fitness for c in characters_testing]), decimals=2
+        )
+    except UnboundLocalError:
+        mean_fit_string = "No characters to test"
     print(
-        f"{characters_testing_string}: Max = {np.round(max_fitness, decimals=2)}; Min = {np.round(min_fitness, decimals=2)}; Mean = {np.round(np.mean([c.fitness for c in characters_testing]), decimals=2)}"
+        f"{characters_testing_string}:"
+        + f"Max = {max_fit_string}; "
+        + f"Min = {min_fit_string}; "
+        + f"Mean = {mean_fit_string}"
     )
 
 
