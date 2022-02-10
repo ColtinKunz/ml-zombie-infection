@@ -224,14 +224,14 @@ def simulate():
             zombie.vel = (output[0], output[1])
             zombie.move(game_map)
 
-            zombie.fitness += (
-                1
-                / (
-                    (
-                        pygame.Vector2(zombie.position) + central_vector
-                    ).magnitude()
-                )
-                * 10
+            center_distance = math.hypot(
+                zombie.position[0] - central_vector.x,
+                zombie.position[1] - central_vector.y,
+            )
+
+            # Increase fitness the closer the zombie gets to the center
+            zombie.fitness += 1 / (
+                center_distance if center_distance != 0 else 1
             )
         for citizen in alive_citizens:
             output = citizen.think(
