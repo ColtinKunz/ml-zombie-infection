@@ -249,6 +249,7 @@ def simulate():
                     # + closest_list(zombie, alive_soldiers, num_soldiers),
                 ),
             )
+            # Set movement speed and direction (vel is an X, Y vector)
             zombie.vel = (output[0], output[1])
             zombie.move(game_map)
 
