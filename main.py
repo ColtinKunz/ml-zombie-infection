@@ -238,8 +238,11 @@ def simulate():
                     + closest_list(citizen, alive_soldiers, num_soldiers),
                 ),
             )
+            # Set movement speed and direction (vel is an X, Y vector)
             citizen.vel = (output[0], output[1])
             citizen.move(game_map)
+
+            # Increase fitness equal to the distance away from the furthest zombie
             citizen.fitness += (
                 pygame.Vector2(
                     closest(citizen, alive_zombies),
@@ -374,18 +377,16 @@ def simulate():
             if move == "out" and bullet in bullets:
                 bullets.remove(bullet)
 
+        # Grab max and minimum fitness
         if counter == 0:
             characters_testing = zombies
         elif counter == 1:
             characters_testing = citizens
         elif counter == 2:
             characters_testing = soldiers
-
         characters_testing.sort(reverse=True, key=lambda c: c.fitness)
-
         max_fitness = characters_testing[0].fitness
         min_fitness = characters_testing[len(characters_testing) - 1].fitness
-
         if draw:
             draw_window(
                 win,
