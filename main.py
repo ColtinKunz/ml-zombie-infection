@@ -157,7 +157,7 @@ def simulate():
     min_fitness = None
 
     # Start from beginning
-    if overwrite_current_pickles and loop_index == 0:
+    if overwrite_current_pickles and loop_index == 0 and sub_counter == 0:
         zombies = character_setup(character_choices["z"], num_zombies)
         pickle_results("best_zombies.pickle", zombies)
         citizens = character_setup(character_choices["c"], num_citizens)
@@ -436,6 +436,7 @@ if __name__ == "__main__":
             sub_loops = soldier_loops
             characters_testing_string = character_choices["s"]
         sub_counter = 0
+        sub_loops = 5
         while sub_loops > sub_counter:
             simulate()
             sub_counter += 1
