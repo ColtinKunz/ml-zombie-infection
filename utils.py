@@ -2,9 +2,8 @@ import os
 import pickle
 import pygame
 import numpy as np
-import math
 
-from random import randint, choice
+from random import randint, uniform
 
 from characters import Zombie, Citizen, Soldier
 
@@ -253,6 +252,11 @@ def mutate_weights(character):
             character.w_hidden_output[len(character.w_hidden_output) - 1][
                 w_row
             ] = -1
+    return character
+
+
+def respawn(character):
+    character.position = character.initial_spawn()
     return character
 
 
