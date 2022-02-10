@@ -312,6 +312,14 @@ def simulate():
             alive_soldiers, alive_zombies = _check_for_infection(
                 soldier, soldiers, alive_soldiers, alive_zombies
             )
+
+            # Shoot bullets
+            if (
+                output[2] > 0.5
+                and soldier.reload_count > soldier.ticks_to_reload
+            ):
+                bullets.append(soldier.shoot(output[3], output[4]))
+
         # Bullet logic
         for bullet in bullets:
             move = bullet.move(game_map)
@@ -343,6 +351,7 @@ def simulate():
                             bullets.remove(bullet)
                         citizen.is_dead = True
                         alive_citizens.remove(citizen)
+                        bullet.soldier.fitness -= 25
             for x, soldier in enumerate(soldiers):
                 overlap = soldier.mask.overlap(
                     bullet.mask,
@@ -352,11 +361,12 @@ def simulate():
                     ),
                 )
                 if overlap:
-                    if not soldier.is_dead and bullet in bullets:
-                        bullets.remove(bullet)
                     if not soldier.is_dead:
+                        if bullet in bullets:
+                            bullets.remove(bullet)
                         soldier.is_dead = True
                         alive_soldiers.remove(soldier)
+                        bullet.soldier.fitness -= 25
             if move == "out" and bullet in bullets:
                 bullets.remove(bullet)
 
