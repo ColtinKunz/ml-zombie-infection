@@ -244,9 +244,9 @@ def simulate():
             output = zombie.think(
                 tuple(
                     [zombie.position[0], zombie.position[1]]
-                    + closest_list(zombie, alive_zombies, num_zombies - 1)
-                    + closest_list(zombie, alive_citizens, num_citizens)
-                    + closest_list(zombie, alive_soldiers, num_soldiers),
+                    # + closest_list(zombie, alive_zombies, num_zombies - 1)
+                    # + closest_list(zombie, alive_citizens, num_citizens)
+                    # + closest_list(zombie, alive_soldiers, num_soldiers),
                 ),
             )
             zombie.vel = (output[0], output[1])
