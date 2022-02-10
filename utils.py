@@ -121,41 +121,89 @@ def pickle_results(
     file_name,
     characters,
 ):
-    best_list = [
-        format_weights_character(character)
-        for character in get_best_list(characters, 5)
-    ]
-    general_list = [
-        format_weights_character(character) for character in characters
-    ]
+    from main import (
+        elitism,
+        num_zombies,
+        num_citizens,
+        num_soldiers,
+        mutation_rate,
+    )
+
+    if len(characters) == 0:
+        return
+
+    # Set number of characters equal to original number of characters.
+    num_characters = 0
+    if characters[0].character_type == "zombies":
+        num_characters = num_zombies
+    elif characters[0].character_type == "citizens":
+        num_characters = num_citizens
+    elif characters[0].character_type == "soldiers":
+        num_characters = num_soldiers
+
+    # Set number of characters to keep out of the best performing
+    elite_count = round(num_characters * elitism)
+
+    # Sort characters with the best performing first
+    characters.sort(reverse=True, key=lambda c: c.fitness)
+
+    # Keep the top performing characters
+    elite_characters = characters[0:elite_count]
+
+    new_character_weights = []
+
+    # Append all but one of combined characters
+    for i in range(0, num_characters - 1):
+        # Grab 2 characters from the elite characters
+        c1, c2 = np.random.choice(elite_characters, 2)
+
+        # Perform crossover
+        # (how much we choose one character's weights over the other)
+        w_input_hidden = (np.random.uniform(0, 1) * c1.w_input_hidden) + (
+            (1 - np.random.uniform(0, 1)) * c2.w_input_hidden
+        )
+        w_hidden_output = (np.random.uniform(0, 1) * c1.w_hidden_output) + (
+            (1 - np.random.uniform(0, 1)) * c2.w_hidden_output
+        )
+        w_hidden_hidden = (np.random.uniform(0, 1) * c1.w_hidden_hidden) + (
+            (1 - np.random.uniform(0, 1)) * c2.w_hidden_hidden
+        )
+
+        # Clean up weights for creating a new character
+        weights = format_weights(
+            w_input_hidden, w_hidden_hidden, w_hidden_output
+        )
+
+        # Create a new character based on the evolved weights and mutate some
+        new_character_weights.append(
+            format_weights_character(
+                character_setup(c1.character_type, 1, weights=weights)[0]
+                if uniform(0, 1) > mutation_rate
+                else mutate_weights(
+                    character_setup(c1.character_type, 1, weights=weights)[0]
+                )
+            )
+        )
+
+    # Append best character
+    new_character_weights.append(
+        format_weights_character(
+            character_setup(
+                c1.character_type,
+                1,
+                weights=format_weights(
+                    c1.w_input_hidden, c1.w_hidden_hidden, c1.w_hidden_output
+                ),
+            )[0]
+        )
+    )
+
     with open(os.path.join("pickles", file_name), "wb") as handle:
         pickle.dump(
-            (best_list, general_list),
+            new_character_weights,
             handle,
             protocol=pickle.HIGHEST_PROTOCOL,
         )
-
-
-def mutate_character(character, all_weights):
-    random_char_weights = choice(all_weights)
-    w_input_hidden = (
-        np.array(character.w_input_hidden) + np.array(random_char_weights["ih"])
-    ) / 2
-    w_hidden_hidden = (
-        np.array(character.w_hidden_hidden)
-        + np.array(random_char_weights["hh"])
-    ) / 2
-    w_hidden_output = (
-        np.array(character.w_hidden_output)
-        + np.array(random_char_weights["ho"])
-    ) / 2
-    weights = format_weights(w_input_hidden, w_hidden_hidden, w_hidden_output)
-    return character_setup(character.character_type, 1, weights)[0]
-
-
-def respawn(character):
-    character.position = character.initial_spawn()
-    return character
 
 
 def load_pickle(num_characters, character_type, mutate=True):
@@ -163,44 +211,49 @@ def load_pickle(num_characters, character_type, mutate=True):
         os.path.join("pickles", f"best_{character_type}.pickle"), "rb"
     ) as handle:
         pickled_weights = pickle.load(handle)
-        best_weights = pickled_weights[0]
-        all_weights = pickled_weights[1]
+        all_weights = pickled_weights
 
         characters = []
 
-        # 0-1
-        # Closer to 0, the less better characters will be taken
-        # Closer to 1, the more better characters will be taken
-        elitism = 1
-
-        # Create list of mutated characters
-        current_percent = elitism
-        for bw in best_weights:
-            current_percent /= 2
-            top_character = character_setup(character_type, 1, bw)[0]
-            for _ in range(math.floor(num_characters * current_percent)):
-                characters.append(
-                    mutate_character(top_character, all_weights)
-                    if mutate
-                    else character_setup(
-                        top_character.character_type,
-                        1,
-                        format_weights_character(top_character),
-                    )[0]
-                )
-
         while len(characters) < num_characters:
-            rand_character = choice(characters)
-            characters.append(
-                mutate_character(rand_character, all_weights)
-                if mutate
-                else character_setup(
-                    rand_character.character_type,
-                    1,
-                    format_weights_character(rand_character),
-                )[0]
-            )
+            for weight in all_weights:
+                if len(characters) == num_characters:
+                    return characters
+                characters.append(character_setup(character_type, 1, weight)[0])
         return characters
+
+
+def mutate_weights(character):
+    if np.random.randint(0, 1) == 0:
+        # Mutate [input -> hidden] weights.
+        w_row = np.random.randint(0, character.num_input_nodes - 1)
+        character.w_input_hidden[0][w_row] *= np.random.uniform(0.99, 1.01)
+        if character.w_input_hidden[0][w_row] > 1:
+            character.w_input_hidden[0][w_row] = 1
+        elif character.w_input_hidden[0][w_row] < -1:
+            character.w_input_hidden[0][w_row] = -1
+
+    else:
+        # Mutate [hidden -> output] weights.
+        w_row = np.random.randint(0, character.num_output_nodes - 1)
+        character.w_hidden_output[len(character.w_hidden_output) - 1][
+            w_row
+        ] *= np.random.uniform(0.99, 1.01)
+        if (
+            character.w_hidden_output[len(character.w_hidden_output) - 1][w_row]
+            > 1
+        ):
+            character.w_hidden_output[len(character.w_hidden_output) - 1][
+                w_row
+            ] = 1
+        if (
+            character.w_hidden_output[len(character.w_hidden_output) - 1][w_row]
+            < -1
+        ):
+            character.w_hidden_output[len(character.w_hidden_output) - 1][
+                w_row
+            ] = -1
+    return character
 
 
 def character_setup(
