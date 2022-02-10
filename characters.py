@@ -57,8 +57,8 @@ class Character:
         self.fitness = 0
 
         self.num_input_nodes = num_input_nodes
-        self.num_hidden_nodes = 10
-        self.num_hidden_layers = 10
+        self.num_hidden_nodes = 4
+        self.num_hidden_layers = 1
         self.num_output_nodes = num_output_nodes
 
         self.w_input_hidden = w_input_hidden
@@ -76,12 +76,12 @@ class Character:
             self.w_hidden_output = np.random.uniform(
                 -1, 1, (self.num_output_nodes, self.num_hidden_nodes)
             )
-        if self.w_hidden_hidden is None:
+        if self.w_hidden_hidden is None and self.num_hidden_layers > 0:
             self.w_hidden_hidden = np.random.uniform(
                 -1,
                 1,
                 (
-                    self.num_hidden_layers - 2,
+                    self.num_hidden_layers - 1,
                     self.num_hidden_nodes,
                     self.num_hidden_nodes,
                 ),
@@ -191,17 +191,20 @@ class Character:
         def _af(x):
             return np.tanh(x)  # Activation function
 
-        ih = _af(
+        thought = _af(
             np.dot(self.w_input_hidden, np.array(inputs))
         )  # Hidden layer 1
         h_to_h = False
         for x, hh in enumerate(self.w_hidden_hidden):
             if not h_to_h:
-                h = _af(np.dot(hh, ih))  # first hidden layer
+                thought = _af(np.dot(hh, thought))  # first hidden layer
                 h_to_h = True
             else:
-                h = _af(np.dot(hh, h))  # The rest of the hidden layers
-        return _af(np.dot(self.w_hidden_output, h))  # Output layer
+                thought = _af(
+                    np.dot(hh, thought)
+                )  # The rest of the hidden layers
+
+        return _af(np.dot(self.w_hidden_output, thought))  # Output layer
 
     def get_weights(self):
         return (
