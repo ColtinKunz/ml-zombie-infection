@@ -78,6 +78,8 @@ def draw_window(
 
     pygame.Surface((win_width, win_height), masks=game_map.mask)
 
+    pygame.draw.circle(win, (50, 50, 50), central_vector, 5)
+
     for zombie in zombies:
         zombie.draw(win)
     for soldier in soldiers:
