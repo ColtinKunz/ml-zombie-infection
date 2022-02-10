@@ -310,6 +310,4 @@ def character_setup(
             )
             for _ in range(0, num_characters)
         ]
-    for c in characters:
-        c.initial_spawn()
     return characters
