@@ -41,7 +41,8 @@ zombie_loops = np.ceil(highest_pop / num_zombies) if num_zombies > 0 else 0
 citizen_loops = np.ceil(highest_pop / num_citizens) if num_citizens > 0 else 0
 soldier_loops = np.ceil(highest_pop / num_soldiers) if num_soldiers > 0 else 0
 
-num_input_nodes = (num_zombies + num_citizens + num_soldiers) * 2
+# num_input_nodes = (num_zombies + num_citizens + num_soldiers) * 2
+num_input_nodes = 2
 
 from utils import (  # noqa: E402
     create_map,
