@@ -32,14 +32,14 @@ bg_img = pygame.transform.scale2x(
     pygame.image.load(os.path.join("images", "bg.png")).convert_alpha()
 )
 
-num_zombies = 10
+num_zombies = 50
 num_citizens = 0
-num_soldiers = 20
+num_soldiers = 0
 
 highest_pop = max(num_zombies, num_citizens, num_soldiers)
-zombie_loops = np.ceil(highest_pop / num_zombies)
-# citizen_loops = np.ceil(highest_pop / num_citizens)
-soldier_loops = np.ceil(highest_pop / num_soldiers)
+zombie_loops = np.ceil(highest_pop / num_zombies) if num_zombies > 0 else 0
+citizen_loops = np.ceil(highest_pop / num_citizens) if num_citizens > 0 else 0
+soldier_loops = np.ceil(highest_pop / num_soldiers) if num_soldiers > 0 else 0
 
 num_input_nodes = (num_zombies + num_citizens + num_soldiers) * 2
 
@@ -189,8 +189,11 @@ def simulate():
     # Run the simulation
     while (
         run
-        and (alive_count(soldiers) > 0 or alive_count(citizens) > 0)
-        and alive_count(zombies) > 0
+        and (
+            (alive_count(soldiers) > 0 or num_soldiers == 0)
+            or (alive_count(citizens) > 0 or num_citizens == 0)
+        )
+        and (alive_count(zombies) > 0 or num_zombies == 0)
         and tick_count < max_ticks
     ):
         clock.tick()
@@ -420,12 +423,13 @@ if __name__ == "__main__":
         loop = math.floor(loop_index / 3)
         counter = 2
         if counter == 0:
+        if counter == 0 and num_zombies > 0:
             sub_loops = zombie_loops
             characters_testing_string = character_choices["z"]
-        elif counter == 1:
+        elif counter == 1 and num_citizens > 0:
             sub_loops = citizen_loops
             characters_testing_string = character_choices["c"]
-        elif counter == 2:
+        elif counter == 2 and num_soldiers > 0:
             sub_loops = soldier_loops
             characters_testing_string = character_choices["s"]
         sub_counter = 0

@@ -34,6 +34,9 @@ def closest(base_character, character_list):
 def closest_list(
     base_character, character_list, num_closest, return_relative_position=False
 ):
+    if len(character_list) == 0 or num_closest == 0:
+        return []
+
     # Initialize lists
     character_list = character_list.copy()
     closest_list = [character for character in character_list[0:num_closest]]
