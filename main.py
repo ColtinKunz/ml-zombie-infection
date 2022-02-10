@@ -199,7 +199,11 @@ def simulate():
         and (alive_count(zombies) > 0 or num_zombies == 0)
         and tick_count < max_ticks
     ):
-        clock.tick()
+        if real_time:
+            clock.tick()
+        else:
+            clock.tick(fps)
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
