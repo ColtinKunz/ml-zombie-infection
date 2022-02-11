@@ -76,10 +76,13 @@ def draw_window(
     win.blit(bg_img, (0, 0))
     game_map.draw(win)
 
+    # Creates the surface which the game map lies
     pygame.Surface((win_width, win_height), masks=game_map.mask)
 
+    # Center dot
     pygame.draw.circle(win, (50, 50, 50), central_vector, 5)
 
+    # Drawing the different entities
     for zombie in zombies:
         zombie.draw(win)
     for soldier in soldiers:
@@ -89,6 +92,7 @@ def draw_window(
     for bullet in bullets:
         bullet.draw(win)
 
+    # For displaying different metrics
     if draw_stats:
         # score
         score_label = stat_font.render(
