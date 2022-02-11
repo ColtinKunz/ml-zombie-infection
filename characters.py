@@ -153,32 +153,16 @@ class Character:
             return (randint(0, win_width), randint(0, win_height))
 
     def spawn(self, new_position):
-        from main import win_width, win_height, game_map
+        from main import game_map
 
         overlap = game_map.mask.overlap(
             self.get_mask(),
             self.position,
         )
         if overlap:
-            new_position = (0, 0)
-            new_position = (
-                new_position[0] + 2
-                if new_position[0] > win_width / 2
-                else new_position[0] - 2,
-                new_position[1],
-            )
-            new_position = (
-                new_position[0],
-                new_position[1] + 2
-                if new_position[1] > win_height / 2
-                else new_position[1] - 2,
-            )
-            try:
-                return self.spawn(new_position)
-            except RecursionError:
-                return self.position
-        else:
-            return self.position
+            self.position = self.initial_spawn()
+            self.position = self.spawn(self.position)
+        return self.position
 
     def get_mask(self):
         """
