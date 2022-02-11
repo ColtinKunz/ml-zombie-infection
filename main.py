@@ -214,7 +214,7 @@ def simulate():
                     new_zombie.fitness = zombie.fitness
                     zombies.append(new_zombie)
                     alive_zombies.append(new_zombie)
-                    # zombie.fitness += 5
+                    zombie.fitness += 5
         return alive_humans, alive_zombies
 
     # Run the simulation
@@ -253,15 +253,6 @@ def simulate():
             zombie.vel = (output[0], output[1])
             zombie.move(game_map)
 
-            center_distance = math.hypot(
-                zombie.position[0] - central_vector.x,
-                zombie.position[1] - central_vector.y,
-            )
-
-            # Increase fitness the closer the zombie gets to the center
-            zombie.fitness += 1 / (
-                center_distance if center_distance != 0 else 1
-            )
         for citizen in alive_citizens:
             output = citizen.think(
                 tuple(
@@ -282,9 +273,6 @@ def simulate():
                 ).magnitude()
                 / 10000
             ) * 10
-            citizen.fitness += 1 / (
-                (pygame.Vector2(citizen.position) + central_vector).magnitude()
-            )
 
             alive_citizens, alive_zombies = _check_for_infection(
                 citizen, citizens, alive_citizens, alive_zombies
