@@ -4,12 +4,6 @@ import numpy as np
 
 from random import uniform
 
-from main.utils import (
-    format_weights_character,
-    format_weights,
-    mutate_weights,
-)
-
 
 def pickle_results(
     file_name,
@@ -21,6 +15,13 @@ def pickle_results(
         num_citizens,
         num_soldiers,
         mutation_rate,
+    )
+
+    from utils import (
+        format_weights_character,
+        format_weights,
+        mutate_weights,
+        character_setup,
     )
 
     if len(characters) == 0:
@@ -101,6 +102,8 @@ def pickle_results(
 
 
 def load_pickle(num_characters, character_type, mutate=True):
+    from utils import character_setup
+
     with open(
         os.path.join("pickles", f"best_{character_type}.pickle"), "rb"
     ) as handle:
