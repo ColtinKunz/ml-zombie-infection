@@ -3,6 +3,8 @@ import math
 import pygame
 import numpy as np
 
+from position import Position
+
 
 fps = 90
 real_time = True
@@ -208,7 +210,7 @@ def simulate():
                     human.is_dead = True
                     alive_humans.remove(citizen)
                     new_zombie = Zombie(
-                        citizen.position,
+                        Position(citizen.position),
                         num_input_nodes,
                         2,
                         w_input_hidden=zombie.w_input_hidden,

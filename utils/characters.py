@@ -3,6 +3,7 @@ import pygame
 from random import randint
 
 from characters import Zombie, Citizen, Soldier
+from position import Position
 
 
 def closest(base_character, character_list):
@@ -104,7 +105,7 @@ def character_setup(
     if character_type == "zombies":
         characters = [
             Zombie(
-                (randint(0, win_width), randint(0, win_height)),
+                Position((randint(0, win_width), randint(0, win_height))),
                 num_input_nodes,
                 2,
                 w_input_hidden=ih_weights,
@@ -117,7 +118,7 @@ def character_setup(
     elif character_type == "citizens":
         characters = [
             Citizen(
-                (randint(0, win_width), randint(0, win_height)),
+                Position((randint(0, win_width), randint(0, win_height))),
                 num_input_nodes,
                 2,
                 w_input_hidden=ih_weights,
@@ -130,7 +131,7 @@ def character_setup(
     elif character_type == "soldiers":
         characters = [
             Soldier(
-                (randint(0, win_width), randint(0, win_height)),
+                Position((randint(0, win_width), randint(0, win_height))),
                 num_input_nodes,
                 5,
                 w_input_hidden=ih_weights,
