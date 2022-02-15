@@ -12,3 +12,6 @@ class Position:
 
     def __repr__(self):
         return repr((self.conv_x, self.conv_y))
+
+    def get_position(self):
+        return (self.conv_x, self.conv_y)

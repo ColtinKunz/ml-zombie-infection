@@ -38,6 +38,8 @@ class Character:
         w_hidden_hidden=None,
         w_hidden_output=None,
         initial=False,
+        W=None,
+        activation=np.tanh,
     ):
         """
         Initialize the object
@@ -57,8 +59,8 @@ class Character:
         self.fitness = 0
 
         self.num_input_nodes = num_input_nodes
-        self.num_hidden_nodes = 4
-        self.num_hidden_layers = 1
+        self.num_hidden_nodes = 0
+        self.num_hidden_layers = 0
         self.num_output_nodes = num_output_nodes
 
         self.w_input_hidden = w_input_hidden
@@ -67,25 +69,22 @@ class Character:
 
         self.character_type = None
 
-        # If weights are passed then use those, otherwise generate randomly.
-        if self.w_input_hidden is None:
-            self.w_input_hidden = np.random.uniform(
-                -1, 1, (self.num_hidden_nodes, self.num_input_nodes)
+        self._af = activation
+
+        if isinstance(W, (list, tuple, np.ndarray)):
+            if isinstance(self._af, (list, tuple, np.ndarray)):
+                if len(self._af) != len(W):
+                    raise Exception("Length mismatch between W and _af!")
+            else:
+                self._af = np.repeat(self._af, len(W))
+        elif W is None:
+            print("This shouldn't be happening -- check the code")
+            self.W = np.random.uniform(
+                -1, 1, (num_input_nodes, num_output_nodes)
             )
-        if self.w_hidden_output is None:
-            self.w_hidden_output = np.random.uniform(
-                -1, 1, (self.num_output_nodes, self.num_hidden_nodes)
-            )
-        if self.w_hidden_hidden is None and self.num_hidden_layers > 0:
-            self.w_hidden_hidden = np.random.uniform(
-                -1,
-                1,
-                (
-                    self.num_hidden_layers - 1,
-                    self.num_hidden_nodes,
-                    self.num_hidden_nodes,
-                ),
-            )
+
+        self.W = W
+        self.nn_config = [(w_i, af_i) for w_i, af_i in zip(self.W, self._af)]
 
     def move(self, game_map):
         if not self.is_dead:
@@ -212,6 +211,8 @@ class Zombie(Character):
         w_hidden_hidden=None,
         w_hidden_output=None,
         initial=False,
+        W=None,
+        activation=np.tanh,
     ):
         Character.__init__(self, position, num_input_nodes, num_output_nodes)
         self.img = zombie_img
@@ -221,6 +222,7 @@ class Zombie(Character):
             self.position = self.initial_spawn()
         self.position = self.spawn(position)
         self.character_type = "zombies"
+        self.W = W
 
 
 class Citizen(Character):
@@ -237,6 +239,8 @@ class Citizen(Character):
         w_hidden_hidden=None,
         w_hidden_output=None,
         initial=False,
+        W=None,
+        activation=np.tanh,
     ):
         Character.__init__(self, position, num_input_nodes, num_output_nodes)
         self.img = citizen_img
@@ -245,6 +249,7 @@ class Citizen(Character):
             self.position = self.initial_spawn()
         self.position = self.spawn(position)
         self.character_type = "citizens"
+        self.W = W
 
 
 class Soldier(Character):
@@ -261,6 +266,8 @@ class Soldier(Character):
         w_hidden_hidden=None,
         w_hidden_output=None,
         initial=False,
+        W=None,
+        activation=np.tanh,
     ):
         Character.__init__(self, position, num_input_nodes, num_output_nodes)
         self.img = soldier_img
@@ -272,6 +279,7 @@ class Soldier(Character):
         self.reload_count = 0
         self.ticks_to_reload = 60
         self.character_type = "soldiers"
+        self.W = W
 
     def shoot(self, x, y):
         self.reload_count = 0

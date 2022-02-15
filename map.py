@@ -2,7 +2,7 @@ import os
 import pygame
 
 map_img = pygame.transform.scale2x(
-    pygame.image.load(os.path.join("images", "wall_map.png")).convert_alpha()
+    pygame.image.load(os.path.join("images", "map.png")).convert_alpha()
 )
 
 

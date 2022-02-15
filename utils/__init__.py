@@ -13,6 +13,7 @@ from .misc import create_map
 from .training import (
     get_best_list,
     format_weights_character,
-    format_weights,
     mutate_weights,
+    fit_prop,
+    crossover,
 )

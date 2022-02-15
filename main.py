@@ -11,7 +11,6 @@ real_time = True
 max_ticks = 500
 overwrite_current_pickles = True
 draw = True
-elitism = 0.04
 mutation_rate = 0.1
 
 loop_index = 0
@@ -28,7 +27,7 @@ characters_testing_string = character_choices["z"]
 
 win = pygame.display.set_mode((win_width, win_height))
 pygame.display.set_caption("Infection")
-central_vector = pygame.Vector2((win_height / 2, win_width / 2))
+central_vector = pygame.Vector2(*Position((0, 0)).get_position())
 
 bg_img = pygame.transform.scale2x(
     pygame.image.load(os.path.join("images", "bg.png")).convert_alpha()
@@ -259,6 +258,16 @@ def simulate():
             zombie.vel = (output[0], output[1])
             zombie.move(game_map)
 
+            center_distance = math.hypot(
+                zombie.position[0] - central_vector.x,
+                zombie.position[1] - central_vector.y,
+            )
+
+            # Increase fitness the closer the zombie gets to the center
+            zombie.fitness += 1 / (
+                center_distance if center_distance != 0 else 1
+            )
+
         for citizen in alive_citizens:
             output = citizen.think(
                 tuple(
@@ -295,15 +304,6 @@ def simulate():
             soldier.reload_count += 1
             soldier.vel = (output[0], output[1])
             soldier.move(game_map)
-            soldier.fitness += (
-                1
-                / (
-                    (
-                        pygame.Vector2(soldier.position) + central_vector
-                    ).magnitude()
-                )
-                * 10
-            )
             alive_soldiers, alive_zombies = _check_for_infection(
                 soldier, soldiers, alive_soldiers, alive_zombies
             )

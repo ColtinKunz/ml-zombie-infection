@@ -1,5 +1,8 @@
 import pygame
 
+import numpy as np
+
+from copy import deepcopy
 from random import randint
 
 from characters import Zombie, Citizen, Soldier
@@ -98,9 +101,10 @@ def character_setup(
 ):
     from main import win_width, win_height, num_input_nodes
 
-    ih_weights = weights["ih"] if weights is not None else None
-    hh_weights = weights["hh"] if weights is not None else None
-    ho_weights = weights["ho"] if weights is not None else None
+    if weights is not None:
+        if isinstance(weights, dict):
+            weights = weights["W"]
+    activation = [np.tanh, np.tanh]
 
     if character_type == "zombies":
         characters = [
@@ -108,9 +112,8 @@ def character_setup(
                 Position((randint(0, win_width), randint(0, win_height))),
                 num_input_nodes,
                 2,
-                w_input_hidden=ih_weights,
-                w_hidden_hidden=hh_weights,
-                w_hidden_output=ho_weights,
+                W=weights,
+                activation=activation,
                 initial=True,
             )
             for _ in range(0, num_characters)
@@ -121,9 +124,8 @@ def character_setup(
                 Position((randint(0, win_width), randint(0, win_height))),
                 num_input_nodes,
                 2,
-                w_input_hidden=ih_weights,
-                w_hidden_hidden=hh_weights,
-                w_hidden_output=ho_weights,
+                W=weights,
+                activation=activation,
                 initial=True,
             )
             for _ in range(0, num_characters)
@@ -134,9 +136,8 @@ def character_setup(
                 Position((randint(0, win_width), randint(0, win_height))),
                 num_input_nodes,
                 5,
-                w_input_hidden=ih_weights,
-                w_hidden_hidden=hh_weights,
-                w_hidden_output=ho_weights,
+                W=weights,
+                activation=activation,
                 initial=True,
             )
             for _ in range(0, num_characters)
